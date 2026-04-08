@@ -54,6 +54,9 @@ def main():
         # Start the event loop
         sys.exit(app.exec())
 
+    except ImportError as e:
+        logger.error(f"Failed to import PyQt6. Install it with: pip install PyQt6\n{e}", exc_info=True)
+        sys.exit(1)
     except Exception as e:
         logger.error(f"Application error: {str(e)}", exc_info=True)
         sys.exit(1)
