@@ -1,6 +1,6 @@
 // The display: port of FireworksCanvas.paintEvent / resizeEvent plus the 60 fps timer, on an HTML canvas.
 // Paint order as in Python: background colour, background scene, weather, then rockets (4 px) and particles (2 px,
-// alpha fading with remaining life). Click/tap launches a firework at that x (described in the README).
+// alpha fading with remaining life). Click/tap launches a firework at that x (web only).
 import { animate } from './core.js';
 import { BACKGROUND_COLOR, CONFIG, Show } from './fw_engine.js';
 import { makeBackground } from './fw_backgrounds.js';

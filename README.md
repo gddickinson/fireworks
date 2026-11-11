@@ -71,6 +71,31 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Web version
+
+The display also runs in the browser: **https://gddickinson.github.io/fireworks/** (GitHub Pages, published from
+`main` by `.github/workflows/pages.yml`). It is a JavaScript port of the models (rockets, particles, patterns,
+weather, scenes) with the same controls, checked number for number against seeded runs of the Python code.
+
+| | |
+|---|---|
+| ![Home](docs/img/home.png) | ![Display: beach, fog, heart pattern](docs/img/show_beach_heart.png) |
+| ![Display: mountains, lightning, star pattern](docs/img/show_mountains_star.png) | ![Python vs JavaScript](docs/img/verify.png) |
+
+Pages: **Display** (the simulator; click the sky to launch, L launch, Space pause, T controls, F fullscreen,
+R reset, S save settings), **Patterns** (each shape from `models/patterns.py`, Python and JS points overlaid),
+**Python vs JS** (seeded reference runs replayed in the browser), **About**. The web display also draws the
+explosion patterns, which the desktop burst does not use yet.
+
+### Run the web app
+```bash
+pip install -r requirements-web.txt
+python run_web.py                     # http://127.0.0.1:8125
+python scripts/build_static.py        # static site in site/ (what GitHub Pages serves)
+python -m pytest -q tests/test_web.py # API, static build, fixture, node tests of the JS port
+python scripts/make_js_fixtures.py    # after changing models/ or effects/ (needs PyQt6)
+```
+
 ## Usage
 
 ### Basic Controls
@@ -119,8 +144,13 @@ fireworks/
 │   ├── math.py        # Mathematical utilities
 │   ├── physics.py     # Physics calculations
 │   └── time.py        # Timing utilities
+├── ui_specs.py        # Control lists and slider specs (shared by the desktop panel and the web app)
+├── web/               # Web app (FastAPI) and the browser port (web/static/fw_*.js)
+├── scripts/           # Static site build, screenshots, JS test fixtures
+├── run_web.py         # Web app entry point
 └── main.py            # Application entry point
 ```
+See INTERFACE.md for the full map.
 
 ## Configuration
 

@@ -26,21 +26,16 @@ route('about', async () => {
       sky flash every 50 to 200 frames.</li>
   </ul>
 
-  <h2>What the web version adds or changes</h2>
-  <p>The JavaScript port matches the Python models number for number (see <a href="#/verify">Python vs JS</a>). A few
-  controls of the desktop panel are not yet connected to the simulation in the desktop app; here they are:</p>
+  <h2>What the web version adds</h2>
+  <p>The JavaScript port matches the Python models number for number (see <a href="#/verify">Python vs JS</a>),
+  including gravity (${sl.gravity.lo * sl.gravity.scale} to ${sl.gravity.hi * sl.gravity.scale}) and launch speed
+  (${sl.launch_speed.lo * sl.launch_speed.scale} to ${sl.launch_speed.hi * sl.launch_speed.scale}; 10 keeps the
+  ${F.LAUNCH_SPEED_MIN} to ${F.LAUNCH_SPEED_MAX} range, other values scale it). Additions of the web version:</p>
   <ul>
-    <li><b>Explosion patterns</b>: the desktop app builds the chosen pattern but <code>Firework.explode()</code> does not
-      use it. Here each pattern point becomes a particle (see <a href="#/patterns">Patterns</a>). "None" is the desktop's
-      starting state: plain random bursts.</li>
-    <li><b>Gravity</b> (${sl.gravity.lo * sl.gravity.scale} to ${sl.gravity.hi * sl.gravity.scale}) and <b>launch speed</b>
-      (${sl.launch_speed.lo * sl.launch_speed.scale} to ${sl.launch_speed.hi * sl.launch_speed.scale}; 10 = the default
-      ${F.LAUNCH_SPEED_MIN} to ${F.LAUNCH_SPEED_MAX} range, other values scale it) apply to new rockets.</li>
-    <li><b>Auto launch off</b> stops new rockets only; in the desktop app it stops the whole animation.</li>
-    <li><b>Click to launch</b> at the clicked spot, as the README describes.</li>
-    <li><b>Text pattern</b> uses the typed text; only the letter A has a shape in <code>patterns.py</code>.</li>
-    <li>The <b>Mountains</b> scene uses the range colours given in <code>mountains.py</code>; the desktop draws the
-      ranges in the current pen colour instead.</li>
+    <li><b>Explosion patterns</b>: the desktop app builds the chosen pattern but its <code>Firework.explode()</code> does
+      not use it yet. Here each pattern point becomes a particle (see <a href="#/patterns">Patterns</a>). "None" gives
+      the desktop's plain random bursts.</li>
+    <li><b>Click to launch</b> at the clicked spot, keyboard shortcuts, pause and PNG export.</li>
     <li>The desktop app has no sound (<code>effects/sound.py</code> exists but is not used and its sound files are not in
       the repository), so neither has the web version.</li>
   </ul>
