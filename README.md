@@ -18,8 +18,8 @@ A PyQt6-based interactive fireworks simulation application featuring realistic p
   - Text (only the letter A has a shape so far)
 - Random pattern generation
 - Adjustable scale and rotation for patterns
-- Note: the desktop burst (`Firework.explode()`) does not use the selected pattern yet; every rocket bursts
-  into a uniform random spray. The web version below draws the pattern shapes.
+- Each pattern point becomes one particle, so the burst grows into the shape (the outermost point moves at the
+  maximum particle speed times the pattern scale)
 - Adjustable gravity and launch speed for new rockets
 
 ### Weather Effects
@@ -84,8 +84,7 @@ weather, scenes) with the same controls, checked number for number against seede
 
 Pages: **Display** (the simulator; click the sky to launch, L launch, Space pause, T controls, F fullscreen,
 R reset, S save settings), **Patterns** (each shape from `models/patterns.py`, Python and JS points overlaid),
-**Python vs JS** (seeded reference runs replayed in the browser), **About**. The web display also draws the
-explosion patterns, which the desktop burst does not use yet.
+**Python vs JS** (seeded reference runs replayed in the browser), **About**.
 
 ### Run the web app
 ```bash

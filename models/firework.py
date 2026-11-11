@@ -28,9 +28,12 @@ class Firework:
             self.velocity_y *= launch_speed / DEFAULT_LAUNCH_SPEED
         self.gravity = FireworkConfig.GRAVITY if gravity is None else gravity
         self.particle_count = particle_count
+        self.pattern = None  # explosion shape (models/patterns.py), set by the canvas
 
     def explode(self) -> None:
         self.exploded = True
+        if self.pattern is not None and self._explode_pattern():
+            return
         for _ in range(self.particle_count):
             angle = random.uniform(0, 2 * math.pi)
             speed = random.uniform(
@@ -39,6 +42,20 @@ class Firework:
             )
             self.particles.append(Particle(self.x, self.y, angle, speed, self.color,
                                            gravity=self.gravity))
+
+    def _explode_pattern(self) -> bool:
+        """One particle per pattern point, moving outwards so the burst grows into the shape; the outermost point
+        moves at PARTICLE_SPEED_MAX x pattern scale. Returns False (plain burst) if the pattern has no points."""
+        points = self.pattern.get_points(self.x, self.y)
+        radius = max((math.hypot(px - self.x, py - self.y) for px, py in points), default=0.0)
+        if not points or radius == 0:
+            return False
+        k = FireworkConfig.PARTICLE_SPEED_MAX * self.pattern.scale / radius
+        for px, py in points:
+            dx, dy = px - self.x, py - self.y
+            self.particles.append(Particle(self.x, self.y, math.atan2(dy, dx), math.hypot(dx, dy) * k,
+                                           self.color, gravity=self.gravity))
+        return True
 
     def update(self) -> bool:
         if not self.exploded:

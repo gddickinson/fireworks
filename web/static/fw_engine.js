@@ -1,8 +1,6 @@
 // Port of models/particle.py, models/firework.py and the animation logic of gui/canvas.py (FireworksCanvas).
 // Field names follow the Python. With the default options a seeded run reproduces the Python models exactly
-// (checked by fw_engine.test.mjs). Web-only additions, all off by default and marked "web:" below:
-//   pattern explosions     the desktop sets firework.pattern but Firework.explode() never reads it.
-// gravity / launchSpeed / autoLaunch follow gui/canvas.py (checked by the "physics" reference run).
+// (checked by fw_engine.test.mjs), including pattern bursts, gravity, launch speed and auto launch.
 import { makePattern, RandomPattern } from './fw_patterns.js';
 import { randomColor } from './fw_color.js';
 import { pyRand } from './fw_rand.js';
@@ -52,8 +50,8 @@ export class Firework {
       this.particles.push(new Particle(this.x, this.y, angle, speed, this.color, 100, this.gravity));
     }
   }
-  // web: one particle per pattern point, moving outwards so the burst grows into the shape. The outermost point
-  // moves at PARTICLE_SPEED_MAX x pattern scale. A pattern without points (Text other than "A") bursts normally.
+  // Firework._explode_pattern: one particle per pattern point, moving outwards so the burst grows into the shape;
+  // the outermost point moves at PARTICLE_SPEED_MAX x pattern scale. No points -> plain burst.
   explodePattern() {
     const pts = this.pattern.get_points(this.x, this.y);
     const r = Math.max(0, ...pts.map(([px, py]) => Math.hypot(px - this.x, py - this.y)));
@@ -104,10 +102,9 @@ export class Show {
   add_firework(x = null) {
     if (x === null) x = this.rand.randint(0, this.width);
     const color = this.use_random_colors ? randomColor(this.rand) : this.firework_color;
-    let pattern = null;
-    if (this.pattern) pattern = this.use_random_patterns ? new RandomPattern(this.rand) : this.pattern;
     const fw = new Firework(x, this.height, color, this.particle_count, this.rand,
-      { gravity: this.gravity, launchSpeed: this.launchSpeed, pattern });
+      { gravity: this.gravity, launchSpeed: this.launchSpeed });
+    if (this.pattern) fw.pattern = this.use_random_patterns ? new RandomPattern(this.rand) : this.pattern;  // after, as in Python
     this.fireworks.push(fw);
     return fw;
   }

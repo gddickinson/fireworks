@@ -16,6 +16,8 @@ route('about', async () => {
       upward speed between ${F.LAUNCH_SPEED_MIN} and ${F.LAUNCH_SPEED_MAX} pixels per frame.</li>
     <li><b>Climb</b>: gravity (${F.GRAVITY} px/frame²) slows it; when its vertical velocity reaches zero, at the top of
       its flight, it bursts.</li>
+    <li><b>Pattern</b>: with an explosion pattern (see <a href="#/patterns">Patterns</a>) each pattern point becomes one
+      particle flying outwards, so the burst grows into the shape.</li>
     <li><b>Burst</b>: ${F.MIN_PARTICLES} to ${F.MAX_PARTICLES} particles (default ${F.DEFAULT_PARTICLES}) fly out at random
       angles with speeds between ${F.PARTICLE_SPEED_MIN} and ${F.PARTICLE_SPEED_MAX} px/frame, fall under the same gravity,
       and fade out over 100 frames.</li>
@@ -32,9 +34,7 @@ route('about', async () => {
   (${sl.launch_speed.lo * sl.launch_speed.scale} to ${sl.launch_speed.hi * sl.launch_speed.scale}; 10 keeps the
   ${F.LAUNCH_SPEED_MIN} to ${F.LAUNCH_SPEED_MAX} range, other values scale it). Additions of the web version:</p>
   <ul>
-    <li><b>Explosion patterns</b>: the desktop app builds the chosen pattern but its <code>Firework.explode()</code> does
-      not use it yet. Here each pattern point becomes a particle (see <a href="#/patterns">Patterns</a>). "None" gives
-      the desktop's plain random bursts.</li>
+    <li><b>"None" pattern</b>: plain random bursts with the chosen particle count (the desktop list starts at Random).</li>
     <li><b>Click to launch</b> at the clicked spot, keyboard shortcuts, pause and PNG export.</li>
     <li>The desktop app has no sound (<code>effects/sound.py</code> exists but is not used and its sound files are not in
       the repository), so neither has the web version.</li>

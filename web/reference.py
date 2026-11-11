@@ -119,6 +119,10 @@ SHOW_CASES = [
     {"name": "dense", "seed": 21, "width": 1200, "height": 700, "particles": 200, "steps": 240, "snap_every": 60},
     {"name": "physics", "seed": 5, "width": 900, "height": 600, "particles": 40, "steps": 300, "snap_every": 50,
      "gravity": 0.04, "launch_speed": 7.5},
+    {"name": "star", "seed": 13, "width": 800, "height": 600, "particles": 50, "steps": 240, "snap_every": 60,
+     "pattern": "Star", "pattern_kwargs": {"scale": 1.2, "rotation": 0.5, "points": 6}},
+    {"name": "random_patterns", "seed": 17, "width": 800, "height": 600, "particles": 50, "steps": 240,
+     "snap_every": 60, "random_each": True},
 ]
 SHOW_BY_NAME = {c["name"]: c for c in SHOW_CASES}
 
@@ -137,19 +141,29 @@ def _snap(fws: list) -> list:
 
 
 def run_show(case: dict) -> dict:
-    """The FireworksCanvas.update_animation loop (fixed colour, no pattern) with the real Firework/Particle."""
+    """The FireworksCanvas.update_animation loop (fixed colour, optional pattern) with the real Firework/Particle."""
     from config import DEFAULT_LAUNCH_SPEED
     g, ls = case.get("gravity", FireworkConfig.GRAVITY), case.get("launch_speed", DEFAULT_LAUNCH_SPEED)
     w, h = case["width"], case["height"]
     fws: list = []
     snaps = []
     with seeded(case["seed"]) as rand:
+        pattern = None
+        if case.get("random_each"):
+            P.RandomPattern()  # FireworksCanvas.set_random_patterns(True)
+        elif case.get("pattern"):
+            pattern = PATTERN_CLASSES[case["pattern"]](**case.get("pattern_kwargs", {}))
         for step in range(case["steps"] + 1):
             if step % case["snap_every"] == 0:
                 snaps.append({"step": step, "fireworks": _snap(fws)})
             fws = [fw for fw in fws if fw.update() and (fw.exploded or fw.y > -h)]
             if rand.random() < FireworkConfig.SPAWN_RATE:  # FireworksCanvas.add_firework
-                fws.append(Firework(rand.randint(0, w), h, (255, 0, 0), case["particles"], gravity=g, launch_speed=ls))
+                fw = Firework(rand.randint(0, w), h, (255, 0, 0), case["particles"], gravity=g, launch_speed=ls)
+                if case.get("random_each"):
+                    fw.pattern = P.RandomPattern()
+                elif pattern is not None:
+                    fw.pattern = pattern
+                fws.append(fw)
     return {"case": case, "snapshots": snaps}
 
 

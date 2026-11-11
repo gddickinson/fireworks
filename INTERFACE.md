@@ -10,8 +10,8 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `config.py` | Physics constants and window settings (Qt-free at import; QColor made lazily) | `FireworkConfig`, `DisplayConfig`, `DEFAULT_FIREWORK_RGB`, `DEFAULT_BACKGROUND_RGB`, `DEFAULT_LAUNCH_SPEED` |
 | `ui_specs.py` | Qt-free control lists and slider specs, shared by `gui/controls.py` and `web/app.py` | `PATTERNS`, `BACKGROUNDS`, `WEATHER`, `SliderSpec`, `SLIDERS` |
 | `models/particle.py` | One spark: velocity, gravity, 100-frame fade | `Particle` |
-| `models/firework.py` | Rocket that climbs and bursts at its apex (gravity, launch speed options) | `Firework` |
-| `models/patterns.py` | Explosion shapes (not yet used by `Firework.explode`) | `CirclePattern`, `HeartPattern`, `StarPattern`, `SpiralPattern`, `DoubleRingPattern`, `RandomPattern`, `TextPattern` |
+| `models/firework.py` | Rocket that climbs and bursts at its apex (gravity, launch speed, pattern) | `Firework` |
+| `models/patterns.py` | Explosion shapes (one burst particle per point, `Firework._explode_pattern`) | `CirclePattern`, `HeartPattern`, `StarPattern`, `SpiralPattern`, `DoubleRingPattern`, `RandomPattern`, `TextPattern` |
 | `effects/weather.py` | Rain, snow, fog, lightning (update + Qt drawing) | `RainEffect`, `SnowEffect`, `FogEffect`, `FogLayer`, `LightningEffect`, `LightningBolt` |
 | `effects/backgrounds.py` | Night sky, cityscape, beach, forest scenes | `NightSkyBackground`, `CityscapeBackground`, `BeachBackground`, `ForestBackground` |
 | `effects/mountains.py` | Mountain ranges with snow caps | `MountainsBackground` |

@@ -28,10 +28,9 @@ route('patterns', async () => {
   <p class="lead">The shapes defined in <code>models/patterns.py</code>. Gold rings: the points computed by the Python
   code; pink dots inside them: the same points from the JavaScript port. In the display each point becomes one
   particle flying outwards, so the burst grows into the shape.</p>
-  <p class="callout small">The desktop app defines these patterns and lets you choose them, but its
-  <code>Firework.explode()</code> does not use them yet (every burst is a uniform random spray). The web display adds
-  that last step: one particle per pattern point, the outermost moving at the maximum particle speed times the
-  pattern scale. <code>TextPattern</code> only has a shape for the letter A.</p>
+  <p class="callout small">As in <code>Firework.explode()</code>: one particle per pattern point, the outermost
+  moving at the maximum particle speed times the pattern scale. Without a pattern the burst is a uniform random
+  spray of the chosen particle count.</p>
   <div class="grid pats" id="pats"></div>`;
   const host = document.getElementById('pats');
   for (const r of refs) {

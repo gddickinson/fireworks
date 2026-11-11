@@ -44,7 +44,7 @@ export function buildPanel(host, V, D, st, actions) {
 
   // Pattern Controls
   const pt = group(host, 'Pattern');
-  const pats = [['None', 'None: plain burst (as in the desktop app)'], ...D.patterns.map(p => [p, p])];
+  const pats = [['None', 'None: plain random burst'], ...D.patterns.map(p => [p, p])];
   pt.innerHTML = `${select('pattern', 'Pattern', pats, st.pattern)}${check('random_patterns', 'Randomize patterns', st.random_patterns)}
     <div id="popts"></div><div id="pspec"></div>
     <p class="small mute" id="pnote"></p>`;

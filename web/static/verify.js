@@ -31,7 +31,7 @@ route('verify', async () => {
     const k = ref.case, last = ref.snapshots.at(-1).fireworks;
     const parts = last.reduce((n, f) => n + f.n, 0);
     shows.insertAdjacentHTML('beforeend', row(`"${esc(k.name)}"`, `seed ${k.seed} · ${k.width}×${k.height} · ${k.particles}
-      particles per rocket${k.gravity !== undefined ? ` · gravity ${k.gravity}, launch speed ${k.launch_speed}` : ""} · ${k.steps} frames, ${ref.snapshots.length} snapshots · ${last.length} fireworks and ${parts}
+      particles per rocket${k.pattern ? ` · ${k.pattern} pattern` : ''}${k.random_each ? ' · random pattern per rocket' : ''}${k.gravity !== undefined ? ` · gravity ${k.gravity}, launch speed ${k.launch_speed}` : ""} · ${k.steps} frames, ${ref.snapshots.length} snapshots · ${last.length} fireworks and ${parts}
       particles at the end · JS ${ms.toFixed(0)} ms`, maxDiff(ref.snapshots, js.snapshots)));
   }
   let q;

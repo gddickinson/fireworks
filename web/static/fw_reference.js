@@ -18,12 +18,14 @@ function snap(fws) {
   });
 }
 
-// The loop of web/reference.py run_show (= FireworksCanvas.update_animation, fixed red, no pattern).
+// The loop of web/reference.py run_show (= FireworksCanvas.update_animation, fixed red, optional pattern).
 export function runShow(c) {
   const show = new Show(c.width, c.height, { rand: pyRand(c.seed) });
   show.particle_count = c.particles;
   if (c.gravity !== undefined) show.gravity = c.gravity;
   if (c.launch_speed !== undefined) show.launchSpeed = c.launch_speed;
+  if (c.random_each) show.set_random_patterns(true);
+  else if (c.pattern) { show.pattern = PATTERN_CLASSES[c.pattern](c.pattern_kwargs || {}); show.patternName = c.pattern; }
   const snapshots = [];
   for (let step = 0; step <= c.steps; step++) {
     if (step % c.snap_every === 0) snapshots.push({ step, fireworks: snap(show.fireworks) });
