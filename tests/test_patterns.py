@@ -41,6 +41,15 @@ class TestHeartPattern(unittest.TestCase):
         points = p.get_points(0, 0)
         self.assertGreater(len(points), 0)
 
+    def test_upright_on_screen(self):
+        """Screen y grows downwards: the tip (t = 180 deg) must be below the centre, the lobes above it."""
+        p = HeartPattern(num_points=36)
+        points = p.get_points(0, 0)
+        tip = points[18]           # t = 180 degrees
+        top = points[0]            # t = 0: the dip between the lobes
+        self.assertGreater(tip[1], 0)
+        self.assertLess(top[1], 0)
+
 
 class TestStarPattern(unittest.TestCase):
 

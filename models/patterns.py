@@ -44,7 +44,8 @@ class HeartPattern(Pattern):
         for t in range(0, 360, 360 // self.num_points):
             angle = math.radians(t)
             px = x + self.scale * (16 * math.sin(angle) ** 3)
-            py = y + self.scale * (13 * math.cos(angle) - 5 * math.cos(2 * angle) -
+            # screen y grows downwards, so the curve's y is subtracted to keep the heart upright
+            py = y - self.scale * (13 * math.cos(angle) - 5 * math.cos(2 * angle) -
                                 2 * math.cos(3 * angle) - math.cos(4 * angle))
             points.append(self._rotate_point(px, py, x, y))
         return points

@@ -28,7 +28,7 @@ export class HeartPattern extends Pattern {
     for (let t = 0; t < 360; t += step) {
       const a = t * (Math.PI / 180);                         // math.radians
       const px = x + this.scale * (16 * Math.sin(a) ** 3);
-      const py = y + this.scale * (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
+      const py = y - this.scale * (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
       pts.push(this._rotate(px, py, x, y));
     }
     return pts;
