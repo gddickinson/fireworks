@@ -7,6 +7,7 @@ class MountainsBackground:
     def __init__(self, width: int, height: int):
         self.width = width
         self.height = height
+        self.colors: List[QColor] = []  # one per range, filled by _generate_mountain_range
         self.mountains = self._generate_mountains()
         self.stars = self._generate_stars()
 
@@ -47,6 +48,7 @@ class MountainsBackground:
         color: QColor
     ) -> List[Tuple[float, float]]:
         """Generate a single mountain range with multiple peaks"""
+        self.colors.append(color)
         points = []
         segment_width = self.width / (peak_count - 1)
         
@@ -108,7 +110,7 @@ class MountainsBackground:
             painter.drawPoint(int(x), int(y))
 
         # Draw mountain ranges (from back to front)
-        for mountain_range in self.mountains:
+        for mountain_range, base_color in zip(self.mountains, self.colors):
             # Create mountain shape
             path = QPainterPath()
             path.moveTo(QPointF(*mountain_range[0]))
@@ -119,7 +121,6 @@ class MountainsBackground:
             
             # Fill mountains with gradient
             mountain_gradient = QLinearGradient(0, 0, 0, self.height)
-            base_color = painter.pen().color()
             mountain_gradient.setColorAt(0, base_color.lighter(120))  # Lighter at top
             mountain_gradient.setColorAt(1, base_color.darker(120))   # Darker at bottom
             

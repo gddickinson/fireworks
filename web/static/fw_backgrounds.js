@@ -51,8 +51,7 @@ export class CityscapeBackground {
   }
 }
 
-// Python draws each range with a gradient from painter.pen().color() (whatever pen the stars/snow left: white,
-// semi-transparent) and drops the colour passed to _generate_mountain_range. web: the passed colours are used.
+// Each range is filled with a vertical gradient from its colour lighter(120) to darker(120).
 const RANGE_SPECS = [[5, [0.3, 0.4], [40, 40, 60]], [4, [0.4, 0.5], [50, 50, 70]], [3, [0.45, 0.6], [60, 60, 80]]];
 export class MountainsBackground {
   constructor(w, h, rand) {
