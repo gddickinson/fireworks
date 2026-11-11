@@ -33,6 +33,7 @@ class WeatherEffect:
 
     def resize(self, width: int, height: int):
         """Update dimensions and regenerate particles if needed"""
+        old_width, old_height = self.width, self.height
         self.width = width
         self.height = height
         # Regenerate particles for new dimensions
@@ -42,14 +43,16 @@ class WeatherEffect:
         # Reposition existing particles to fit new dimensions
         for particle in old_particles:
             # Scale particle position to new dimensions
-            particle.x = (particle.x / self.width) * width
-            particle.y = (particle.y / self.height) * height
+            particle.x = (particle.x / old_width) * width
+            particle.y = (particle.y / old_height) * height
             if (0 <= particle.x <= width and
                 0 <= particle.y <= height):
                 self.particles.append(particle)
 
-        # Add new particles if needed
-        self.init_particles()
+        # Add new particles if needed (top up to the previous count, never more)
+        if len(self.particles) < len(old_particles):
+            self.init_particles()
+            del self.particles[len(old_particles):]
 
     def init_particles(self):
         """Initialize particles - to be implemented by subclasses"""
@@ -156,16 +159,19 @@ class FogLayer:
         """Update fog layer position and handle wrapping"""
         self.x += self.velocity
 
-        # Wrap around screen edges
+        # Wrap around screen edges (the control points jump with the layer)
+        shift = self.velocity
         if self.velocity > 0 and self.x > width:
+            shift += -self.width - self.x
             self.x = -self.width
         elif self.velocity < 0 and self.x + self.width < 0:
+            shift += width - self.x
             self.x = width
 
         # Update control points
         for i in range(len(self.control_points)):
             x, y = self.control_points[i]
-            self.control_points[i] = (x + self.velocity, y)
+            self.control_points[i] = (x + shift, y)
 
 class FogEffect(WeatherEffect):
     def __init__(self, width: int, height: int):
@@ -255,13 +261,12 @@ class FogEffect(WeatherEffect):
 
     def resize(self, width: int, height: int):
         """Handle window resize"""
+        scale_x = width / self.width
+        scale_y = height / self.height
         super().resize(width, height)
 
         # Adjust fog layers for new dimensions
         for layer in self.fog_layers:
-            # Scale dimensions
-            scale_x = width / self.width
-            scale_y = height / self.height
 
             layer.width *= scale_x
             layer.height *= scale_y

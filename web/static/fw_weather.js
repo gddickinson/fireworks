@@ -11,16 +11,16 @@ class WeatherEffect {
   update() {}
   draw() {}
   init_particles() {}
-  // As in weather.py: width/height are set first, so the rescale is a no-op, and init_particles() then adds a
-  // second set of particles (FireworksCanvas.set_weather calls resize() right after creating the effect).
+  // Rescale positions; top up (never beyond the previous count) with new particles if some fell outside.
   resize(width, height) {
+    const ow = this.width, oh = this.height;
     this.width = width; this.height = height;
     const old = this.particles; this.particles = [];
     for (const p of old) {
-      p.x = (p.x / this.width) * width; p.y = (p.y / this.height) * height;
+      p.x = (p.x / ow) * width; p.y = (p.y / oh) * height;
       if (p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height) this.particles.push(p);
     }
-    this.init_particles();
+    if (this.particles.length < old.length) { this.init_particles(); this.particles.length = old.length; }
   }
 }
 
@@ -90,9 +90,10 @@ class FogLayer {
   }
   update(width) {
     this.x += this.velocity;
-    if (this.velocity > 0 && this.x > width) this.x = -this.width;
-    else if (this.velocity < 0 && this.x + this.width < 0) this.x = width;
-    this.control_points = this.control_points.map(([x, y]) => [x + this.velocity, y]);  // (not wrapped, as in Python)
+    let shift = this.velocity;                                // the control points jump with the layer
+    if (this.velocity > 0 && this.x > width) { shift += -this.width - this.x; this.x = -this.width; }
+    else if (this.velocity < 0 && this.x + this.width < 0) { shift += width - this.x; this.x = width; }
+    this.control_points = this.control_points.map(([x, y]) => [x + shift, y]);
   }
 }
 
@@ -107,8 +108,8 @@ export class FogEffect extends WeatherEffect {
   }
   update() { this.time += 0.01; for (const L of this.fog_layers) L.update(this.width); }
   resize(width, height) {
-    super.resize(width, height);
     const sx = width / this.width, sy = height / this.height;
+    super.resize(width, height);
     for (const L of this.fog_layers) {
       L.width *= sx; L.height *= sy; L.x *= sx; L.y *= sy;
       L.control_points = L.control_points.map(([x, y]) => [x * sx, y * sy]);
