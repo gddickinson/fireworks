@@ -17,7 +17,17 @@
   - Mountains drawn in the pen's white instead of their blue-grey (`tests/test_backgrounds.py`).
   - HeartPattern upside down on screen (`tests/test_patterns.py`).
   - README claims corrected (weather transitions, twinkling, click to launch, text pattern, clone dir, link).
-- Needs George's decision: whether/how `Firework.explode()` should use the selected pattern (web uses one particle
-  per pattern point, outermost at PARTICLE_SPEED_MAX x scale); lightning branches never fade; snow caps re-drawn
-  with a new random width every frame (flicker); `effects/sound.py` unused and sound files missing; Text pattern
-  only knows the letter A.
+- Open points from that session were decided by George (see below); launch-speed mapping kept.
+
+## 2026-11-11 (later) -- Fixes approved by George (branch `web-interface`, after merge to main)
+- Desktop burst now uses the chosen pattern (`Firework._explode_pattern`: one particle per pattern point,
+  outermost at PARTICLE_SPEED_MAX x scale), the rule the web already used; web attaches the pattern after
+  building the rocket as the canvas does. `tests/test_firework.py`; new seeded reference shows "star",
+  "random_patterns", "text" (JS = Python to ~1e-15).
+- Lightning branches fade with their main bolt (`TestLightningFade`).
+- Text pattern: A-Z and 0-9 as 5 x 7 dot-matrix glyphs in `models/glyphs.py`; `web/static/fw_glyphs.js` is
+  generated from it by `scripts/make_js_fixtures.py` and checked by `tests/test_web.py` (`TestTextPattern`).
+- Removed unused `effects/sound.py` and its references (`tests/test_effects_package.py`); `_archive/` untouched.
+- Checks: full suite 78 passed (offscreen Qt), test_web 19 passed (also without PyQt6), node 11 + 11,
+  screenshots static/base all ok, phone 0 px; desktop text burst checked offscreen.
+- Still open (not requested): snow caps re-drawn with a new random width every frame (flicker).
