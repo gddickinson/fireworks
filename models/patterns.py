@@ -3,6 +3,8 @@ from typing import List, Tuple
 import math
 import random
 
+from models.glyphs import COLS as GLYPH_COLS, ROWS as GLYPH_ROWS, glyph_points
+
 class Pattern(ABC):
     def __init__(self, scale: float = 1.0, rotation: float = 0.0):
         self.scale = scale
@@ -130,11 +132,14 @@ class RandomPattern(Pattern):
         return self.selected_pattern.get_points(x, y)
 
 class TextPattern(Pattern):
+    """Text as 5 x 7 dot-matrix glyphs (models/glyphs.py: A-Z, 0-9), centred on the burst."""
+
     def __init__(self, text: str, scale: float = 1.0, spacing: float = 30.0):
         super().__init__(scale)
         self.text = text
         self.spacing = spacing
-        self.char_width = 20 * scale  # Base width for each character
+        self.dot_pitch = 5 * scale              # distance between neighbouring dots
+        self.char_width = spacing * scale       # advance per character (5 dots + a one-dot gap at 30)
         self.total_width = len(text) * self.char_width
 
     def get_points(self, x: float, y: float) -> List[Tuple[float, float]]:
@@ -142,26 +147,12 @@ class TextPattern(Pattern):
         start_x = x - (self.total_width / 2)
 
         for i, char in enumerate(self.text):
-            char_x = start_x + (i * self.char_width)
-            char_points = self._get_char_points(char, char_x, y)
-            points.extend(char_points)
+            char_x = start_x + (i + 0.5) * self.char_width  # centre of the character cell
+            points.extend(self._get_char_points(char, char_x, y))
 
         return points
 
     def _get_char_points(self, char: str, x: float, y: float) -> List[Tuple[float, float]]:
-        # Simplified point-based character representations
-        # You can expand this with more detailed character definitions
-        points = []
-        scale = self.scale * 15  # Scale factor for letters
-
-        if char.upper() == 'A':
-            points.extend([
-                (x - scale, y + scale),
-                (x, y - scale),
-                (x + scale, y + scale),
-                (x - scale/2, y),
-                (x + scale/2, y)
-            ])
-        # Add more characters as needed...
-
-        return points
+        """Dots of one character centred on (x, y)"""
+        cx, cy = (GLYPH_COLS - 1) / 2, (GLYPH_ROWS - 1) / 2
+        return [(x + (c - cx) * self.dot_pitch, y + (r - cy) * self.dot_pitch) for c, r in glyph_points(char)]

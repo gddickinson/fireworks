@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+import json
 import math
 from dataclasses import fields
 
@@ -96,6 +97,7 @@ PATTERN_CASES = [
     ("Double Ring", {"scale": 1.2, "rotation": 0.4, "inner_points": 10, "outer_points": 20}),
     ("Text", {"text": "A a", "scale": 1.2}),
     ("Text", {"text": "Hello"}),
+    ("Text", {"text": "AZ 09 fireworks!", "scale": 0.8}),
 ]
 PATTERN_CLASSES = {"Circle": P.CirclePattern, "Heart": P.HeartPattern, "Star": P.StarPattern,
                    "Spiral": P.SpiralPattern, "Double Ring": P.DoubleRingPattern, "Text": P.TextPattern}
@@ -123,6 +125,8 @@ SHOW_CASES = [
      "pattern": "Star", "pattern_kwargs": {"scale": 1.2, "rotation": 0.5, "points": 6}},
     {"name": "random_patterns", "seed": 17, "width": 800, "height": 600, "particles": 50, "steps": 240,
      "snap_every": 60, "random_each": True},
+    {"name": "text", "seed": 19, "width": 800, "height": 600, "particles": 50, "steps": 240, "snap_every": 60,
+     "pattern": "Text", "pattern_kwargs": {"text": "HI 42", "scale": 1.0}},
 ]
 SHOW_BY_NAME = {c["name"]: c for c in SHOW_CASES}
 
@@ -221,6 +225,14 @@ def random_colors(seed: int = 9, n: int = 24) -> list:
     with seeded(seed, QT_MODULES):
         cols = [ColorUtils.random_color(min_saturation=0.7, min_value=0.8) for _ in range(n)]  # as the canvas
     return [[c.red(), c.green(), c.blue()] for c in cols]
+
+
+def glyphs_js() -> str:
+    """web/static/fw_glyphs.js: the TextPattern glyphs of models/glyphs.py as an ES module."""
+    from models.glyphs import COLS, GLYPHS, ROWS
+    rows = "\n".join(f"  {json.dumps(k)}: {json.dumps(list(v))}," for k, v in GLYPHS.items())
+    return ("// Generated from models/glyphs.py by scripts/make_js_fixtures.py: do not edit (tests/test_web.py checks it).\n"
+            f"export const COLS = {COLS}, ROWS = {ROWS};\nexport const GLYPHS = {{\n{rows}\n}};\n")
 
 
 def mulberry_stream(seed: int = 1, n: int = 16) -> list:

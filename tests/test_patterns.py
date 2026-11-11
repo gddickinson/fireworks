@@ -7,7 +7,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.patterns import (
     CirclePattern, HeartPattern, StarPattern,
-    SpiralPattern, DoubleRingPattern, RandomPattern
+    SpiralPattern, DoubleRingPattern, RandomPattern, TextPattern
 )
 
 
@@ -86,6 +86,32 @@ class TestRandomPattern(unittest.TestCase):
         p = RandomPattern()
         points = p.get_points(0, 0)
         self.assertGreater(len(points), 0)
+
+
+class TestTextPattern(unittest.TestCase):
+
+    CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+    def test_every_letter_and_digit_has_a_shape(self):
+        shapes = set()
+        for ch in self.CHARS:
+            pts = TextPattern(ch).get_points(0, 0)
+            self.assertGreaterEqual(len(pts), 7, ch)
+            shapes.add(tuple(sorted(pts)))
+        self.assertEqual(len(shapes), len(self.CHARS), "every character has its own shape")
+
+    def test_lowercase_matches_uppercase_and_unknown_is_empty(self):
+        self.assertEqual(TextPattern("hello").get_points(0, 0), TextPattern("HELLO").get_points(0, 0))
+        self.assertEqual(TextPattern("#").get_points(0, 0), [])
+
+    def test_text_is_centred_and_letters_do_not_overlap(self):
+        pts = TextPattern("HH", scale=2.0).get_points(100, 50)
+        xs = [x for x, _ in pts]
+        self.assertAlmostEqual((min(xs) + max(xs)) / 2, 100)
+        left = [x for x in xs if x < 100]
+        right = [x for x in xs if x > 100]
+        self.assertEqual(len(left), len(right))
+        self.assertGreater(min(right) - max(left), 0)
 
 
 if __name__ == '__main__':

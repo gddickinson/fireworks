@@ -41,7 +41,7 @@ route('patterns', async () => {
     card.innerHTML = `<b>${esc(r.name)}</b><small>${esc(label(r))}</small>
       <canvas role="img" aria-label="${esc(r.name)} pattern, ${r.points.length} points"></canvas>
       <span class="small">${r.points.length} points · max |JS − Python| <b class="${same ? 'ok' : 'err'}">${d === 0 ? '0 (identical)' : d.toExponential(1)}</b>
-      ${r.points.length ? '' : ' (no letter shape)'} · <a href="#/show?pattern=${encodeURIComponent(r.name)}&random=1">launch</a></span>`;
+      ${r.points.length ? '' : ' (no glyphs)'} · <a href="#/show?pattern=${encodeURIComponent(r.name)}&random=1">launch</a></span>`;
     host.appendChild(card);
     draw(card.querySelector('canvas'), r.points, js.points);
   }

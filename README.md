@@ -15,7 +15,7 @@ A PyQt6-based interactive fireworks simulation application featuring realistic p
   - Star (customizable points)
   - Spiral (adjustable arms)
   - Double Ring
-  - Text (only the letter A has a shape so far)
+  - Text (A-Z and 0-9 as 5 x 7 dot-matrix glyphs, `models/glyphs.py`)
 - Random pattern generation
 - Adjustable scale and rotation for patterns
 - Each pattern point becomes one particle, so the burst grows into the shape (the outermost point moves at the

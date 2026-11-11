@@ -95,6 +95,12 @@ def _close(a, b, path="$"):
         assert a == b, (path, a, b)
 
 
+def test_js_glyphs_are_current():
+    """web/static/fw_glyphs.js must be generated from models/glyphs.py (run scripts/make_js_fixtures.py)."""
+    from web.reference import glyphs_js
+    assert (STATIC / "fw_glyphs.js").read_text() == glyphs_js()
+
+
 def test_js_fixture_is_current():
     """tests/fixtures/fw_reference.json must match a fresh run of the Python code (scripts/make_js_fixtures.py).
     The weather/background/colour part needs PyQt6 and is only re-checked where it is installed."""

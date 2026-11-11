@@ -12,6 +12,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `models/particle.py` | One spark: velocity, gravity, 100-frame fade | `Particle` |
 | `models/firework.py` | Rocket that climbs and bursts at its apex (gravity, launch speed, pattern) | `Firework` |
 | `models/patterns.py` | Explosion shapes (one burst particle per point, `Firework._explode_pattern`) | `CirclePattern`, `HeartPattern`, `StarPattern`, `SpiralPattern`, `DoubleRingPattern`, `RandomPattern`, `TextPattern` |
+| `models/glyphs.py` | 5 x 7 dot-matrix glyphs A-Z, 0-9 for `TextPattern` (also generated to `web/static/fw_glyphs.js`) | `GLYPHS`, `glyph_points()` |
 | `effects/weather.py` | Rain, snow, fog, lightning (update + Qt drawing) | `RainEffect`, `SnowEffect`, `FogEffect`, `FogLayer`, `LightningEffect`, `LightningBolt` |
 | `effects/backgrounds.py` | Night sky, cityscape, beach, forest scenes | `NightSkyBackground`, `CityscapeBackground`, `BeachBackground`, `ForestBackground` |
 | `effects/mountains.py` | Mountain ranges with snow caps | `MountainsBackground` |
@@ -31,6 +32,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `static/core.js`, `style.css` (kit) | Router, `api()`, `slider()`, `animate()`, `rng()`; shared theme | — |
 | `static/fw_rand.js` | Python-`random`-shaped seeded RNG | `pyRand` |
 | `static/fw_engine.js` | Port of particle/firework/canvas logic (+ web-only pattern bursts) | `CONFIG`, `Particle`, `Firework`, `Show` |
+| `static/fw_glyphs.js` | Generated copy of `models/glyphs.py` (do not edit) | `GLYPHS` |
 | `static/fw_patterns.js`, `fw_weather.js`, `fw_backgrounds.js`, `fw_color.js` | Ports of patterns, weather, scenes, `random_color` | `makePattern`, `makeWeather`, `makeBackground`, `randomColor` |
 | `static/fw_reference.js` | Replays the reference runs, `maxDiff` | `runShow`, `weatherRuns`, `backgroundScenes` |
 | `static/show_view.js`, `show_panel.js` | Canvas display + loop; control panel DOM | `ShowView`, `paint`, `buildPanel` |
@@ -45,7 +47,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `run_web.py` | Web app on http://127.0.0.1:8125 |
 | `scripts/build_static.py` | Export the static site to `site/` |
 | `scripts/screenshots.py` | Playwright smoke test (`--static` / `--base`) and README images (`--shots` → `docs/img/`) |
-| `scripts/make_js_fixtures.py` | Regenerate `tests/fixtures/fw_reference.json` (needs PyQt6) |
+| `scripts/make_js_fixtures.py` | Regenerate `tests/fixtures/fw_reference.json` and `web/static/fw_glyphs.js` (needs PyQt6) |
 | `tests/test_config.py`, `test_math_utils.py`, `test_patterns.py`, `test_physics.py` | Pure-logic tests (need PyQt6 via package imports) |
 | `tests/test_weather.py`, `test_canvas.py`, `test_backgrounds.py` | Regression tests of the 2026-11-11 fixes (offscreen Qt) |
 | `tests/test_web.py` | API, static build, fixture current, node tests (runs without Qt) |

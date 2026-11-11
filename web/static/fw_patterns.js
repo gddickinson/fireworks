@@ -1,5 +1,6 @@
 // Port of models/patterns.py: the explosion shapes. get_points(x, y) returns [px, py] pairs around (x, y),
 // rotated by `rotation` radians. RandomPattern draws its parameters from a pyRand (fw_rand.js) in Python's order.
+import { COLS, GLYPHS, ROWS } from './fw_glyphs.js';
 
 class Pattern {
   constructor(scale = 1.0, rotation = 0.0) { this.scale = scale; this.rotation = rotation; }
@@ -99,21 +100,23 @@ export class RandomPattern extends Pattern {
   get_points(x, y) { return this.selected_pattern.get_points(x, y); }
 }
 
-// Only the letter A has a point shape in patterns.py ("Add more characters as needed..."); others give no points.
+// Text as 5 x 7 dot-matrix glyphs (fw_glyphs.js, generated from models/glyphs.py: A-Z, 0-9), centred on the burst.
 export class TextPattern extends Pattern {
   constructor(text, scale = 1.0, spacing = 30.0) {
     super(scale); this.text = text; this.spacing = spacing;
-    this.char_width = 20 * scale; this.total_width = text.length * this.char_width;
+    this.dot_pitch = 5 * scale; this.char_width = spacing * scale; this.total_width = text.length * this.char_width;
   }
   get_points(x, y) {
     const pts = [], start = x - this.total_width / 2;
-    [...this.text].forEach((ch, i) => pts.push(...this._char(ch, start + i * this.char_width, y)));
+    [...this.text].forEach((ch, i) => pts.push(...this._char(ch, start + (i + 0.5) * this.char_width, y)));
     return pts;
   }
   _char(ch, x, y) {
-    const s = this.scale * 15;
-    if (ch.toUpperCase() === 'A') return [[x - s, y + s], [x, y - s], [x + s, y + s], [x - s / 2, y], [x + s / 2, y]];
-    return [];
+    const rows = GLYPHS[ch.toUpperCase()] || [], cx = (COLS - 1) / 2, cy = (ROWS - 1) / 2, pts = [];
+    rows.forEach((line, r) => [...line].forEach((cell, c) => {
+      if (cell === '#') pts.push([x + (c - cx) * this.dot_pitch, y + (r - cy) * this.dot_pitch]);
+    }));
+    return pts;
   }
 }
 

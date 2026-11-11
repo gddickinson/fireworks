@@ -62,7 +62,7 @@ export function buildPanel(host, V, D, st, actions) {
   const showSpec = name => {
     star.hidden = name !== 'Star'; spiral.hidden = name !== 'Spiral'; text.hidden = name !== 'Text';
     popts.classList.toggle('dim', st.random_patterns);
-    pnote.textContent = name === 'Text' ? 'Only the letter A has a shape in patterns.py; other letters burst normally.'
+    pnote.textContent = name === 'Text' ? 'Letters A-Z and digits 0-9 (5 x 7 dots); other characters are skipped.'
       : name === 'Random' ? 'One random shape (circle, heart, star, spiral or double ring) for every rocket until changed.' : '';
   };
   el.pattern.onchange = () => { st.pattern = el.pattern.value; S.set_pattern(st.pattern); showSpec(st.pattern); };

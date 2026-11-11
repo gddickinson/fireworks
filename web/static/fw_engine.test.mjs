@@ -51,13 +51,13 @@ ok('rocket rises, explodes at the apex into particle_count particles, all expire
   assert.equal(fw.update(), false);
 });
 
-ok('pattern bursts (web only), gravity, launch speed, auto launch off', () => {
+ok('pattern bursts, gravity, launch speed, auto launch off', () => {
   const fw = new Firework(400, 600, [1, 1, 1], 50, pyRand(1), { pattern: new CirclePattern(1.0, 0, 36) });
   fw.y = 300; fw.explode();
   assert.equal(fw.particles.length, 36);
   fw.particles.forEach(p => assert.ok(Math.abs(Math.hypot(p.velocity_x, p.velocity_y) - CONFIG.PARTICLE_SPEED_MAX) < 1e-12));
-  const t = new Firework(0, 600, [1, 1, 1], 20, pyRand(1), { pattern: new TextPattern('xyz') });
-  t.explode(); assert.equal(t.particles.length, 20);            // no letter shape -> plain burst
+  const t = new Firework(0, 600, [1, 1, 1], 20, pyRand(1), { pattern: new TextPattern('#?') });
+  t.explode(); assert.equal(t.particles.length, 20);            // no glyphs -> plain burst
   const a = new Firework(0, 600, [1, 1, 1], 5, pyRand(2)), b = new Firework(0, 600, [1, 1, 1], 5, pyRand(2), { launchSpeed: 20 });
   assert.ok(Math.abs(b.velocity_y - 2 * a.velocity_y) < 1e-12);
   const g = new Firework(0, 600, [1, 1, 1], 5, pyRand(2), { gravity: 0 });
