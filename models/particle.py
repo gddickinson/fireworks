@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 class Particle:
     def __init__(self, x: float, y: float, angle: float, speed: float,
-                 color: QColor, lifetime: int = 100):
+                 color: QColor, lifetime: int = 100, gravity: float | None = None):
         self.x = x
         self.y = y
         self.angle = angle
@@ -19,7 +19,7 @@ class Particle:
         self.color = color
         self.lifetime = lifetime
         self.current_life = lifetime
-        self.gravity = FireworkConfig.GRAVITY
+        self.gravity = FireworkConfig.GRAVITY if gravity is None else gravity
         self.velocity_x = math.cos(angle) * speed
         self.velocity_y = math.sin(angle) * speed
 

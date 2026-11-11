@@ -5,7 +5,7 @@ version offers exactly the controls of the desktop app. A slider's real value is
 """
 from dataclasses import asdict, dataclass
 
-from config import FireworkConfig
+from config import DEFAULT_LAUNCH_SPEED, FireworkConfig
 
 PATTERNS = ["Random", "Circle", "Heart", "Star", "Spiral", "Double Ring", "Text"]
 BACKGROUNDS = ["Night Sky", "Cityscape", "Mountains", "Beach", "Forest"]
@@ -29,7 +29,7 @@ PATTERN_ROTATION = SliderSpec("pattern_rotation", "Rotation", 0, 360, 0)  # degr
 STAR_POINTS = SliderSpec("star_points", "Points", 3, 12, 5)
 SPIRAL_ARMS = SliderSpec("spiral_arms", "Arms", 1, 8, 3)
 GRAVITY = SliderSpec("gravity", "Gravity", 0, 100, int(FireworkConfig.GRAVITY * 100), 0.01)
-LAUNCH_SPEED = SliderSpec("launch_speed", "Launch Speed", 50, 200, 100, 0.1)
+LAUNCH_SPEED = SliderSpec("launch_speed", "Launch Speed", 50, 200, round(DEFAULT_LAUNCH_SPEED * 10), 0.1)
 
 SLIDERS = [PARTICLE_COUNT, PATTERN_SCALE, PATTERN_ROTATION, STAR_POINTS, SPIRAL_ARMS, GRAVITY, LAUNCH_SPEED]
 

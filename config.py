@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 # RGB values of the default colours (Qt-free, also read by the web app in web/).
 DEFAULT_FIREWORK_RGB = (255, 0, 0)
 DEFAULT_BACKGROUND_RGB = (0, 0, 20)  # Very dark blue, better for fireworks display
+# Launch Speed control value that keeps the LAUNCH_SPEED_MIN..MAX range; other values scale that range.
+DEFAULT_LAUNCH_SPEED = 10.0
 
 
 def default_firework_color() -> QColor:

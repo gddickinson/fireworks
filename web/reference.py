@@ -117,6 +117,8 @@ def pattern_points() -> list:
 SHOW_CASES = [
     {"name": "default", "seed": 7, "width": 800, "height": 600, "particles": 50, "steps": 300, "snap_every": 50},
     {"name": "dense", "seed": 21, "width": 1200, "height": 700, "particles": 200, "steps": 240, "snap_every": 60},
+    {"name": "physics", "seed": 5, "width": 900, "height": 600, "particles": 40, "steps": 300, "snap_every": 50,
+     "gravity": 0.04, "launch_speed": 7.5},
 ]
 SHOW_BY_NAME = {c["name"]: c for c in SHOW_CASES}
 
@@ -136,6 +138,8 @@ def _snap(fws: list) -> list:
 
 def run_show(case: dict) -> dict:
     """The FireworksCanvas.update_animation loop (fixed colour, no pattern) with the real Firework/Particle."""
+    from config import DEFAULT_LAUNCH_SPEED
+    g, ls = case.get("gravity", FireworkConfig.GRAVITY), case.get("launch_speed", DEFAULT_LAUNCH_SPEED)
     w, h = case["width"], case["height"]
     fws: list = []
     snaps = []
@@ -143,9 +147,9 @@ def run_show(case: dict) -> dict:
         for step in range(case["steps"] + 1):
             if step % case["snap_every"] == 0:
                 snaps.append({"step": step, "fireworks": _snap(fws)})
-            fws = [fw for fw in fws if fw.update()]
+            fws = [fw for fw in fws if fw.update() and (fw.exploded or fw.y > -h)]
             if rand.random() < FireworkConfig.SPAWN_RATE:  # FireworksCanvas.add_firework
-                fws.append(Firework(rand.randint(0, w), h, (255, 0, 0), case["particles"]))
+                fws.append(Firework(rand.randint(0, w), h, (255, 0, 0), case["particles"], gravity=g, launch_speed=ls))
     return {"case": case, "snapshots": snaps}
 
 

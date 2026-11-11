@@ -3,7 +3,7 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QPainter, QPen, QColor
 import random
 
-from config import FireworkConfig, DisplayConfig
+from config import DEFAULT_LAUNCH_SPEED, FireworkConfig, DisplayConfig
 from models.firework import Firework
 
 from utils.color import ColorUtils
@@ -55,6 +55,11 @@ class FireworksCanvas(QWidget):
         }
         self.use_random_patterns = False
 
+        # Physics and launch controls
+        self.gravity = FireworkConfig.GRAVITY
+        self.launch_speed = DEFAULT_LAUNCH_SPEED
+        self.auto_launch = True
+
         # Initialize effects
         self.background = None
         self.weather_effect = None
@@ -96,11 +101,13 @@ class FireworksCanvas(QWidget):
 
     def update_animation(self):
         """Update fireworks animation"""
-        # Update existing fireworks
-        self.fireworks = [fw for fw in self.fireworks if fw.update()]
+        # Update existing fireworks (a rocket that never bursts, e.g. at zero gravity, is dropped once it is
+        # a window height above the top)
+        self.fireworks = [fw for fw in self.fireworks
+                          if fw.update() and (fw.exploded or fw.y > -self.height())]
 
         # Add new fireworks
-        if random.random() < FireworkConfig.SPAWN_RATE:
+        if self.auto_launch and random.random() < FireworkConfig.SPAWN_RATE:
             self.add_firework()
 
         # Update weather effect if any
@@ -125,7 +132,8 @@ class FireworksCanvas(QWidget):
             color = self.firework_color
 
         # Create firework
-        firework = Firework(x, self.height(), color, self.particle_count)
+        firework = Firework(x, self.height(), color, self.particle_count,
+                            gravity=self.gravity, launch_speed=self.launch_speed)
 
         # Apply pattern if one is set
         if self.pattern:
@@ -262,23 +270,13 @@ class FireworksCanvas(QWidget):
             self.weather_effect.resize(self.width(), self.height())
 
     def set_auto_launch(self, enabled: bool):
-        """Enable or disable automatic launching"""
-        if enabled:
+        """Enable or disable automatic launching (the animation keeps running)"""
+        self.auto_launch = enabled
+        if not self.timer.isActive():
             self.timer.start()
-        else:
-            self.timer.stop()
 
     def manual_launch(self):
         """Manually launch a firework"""
-        self.add_firework()
-
-    def set_text_pattern(self, text: str):
-        """Set the text to be displayed in fireworks"""
-        if not text:
-            return
-
-        # TODO: Implement text rendering to points
-        # For now, just launch a regular firework
         self.add_firework()
 
     def set_launch_speed(self, speed: float):
@@ -314,6 +312,11 @@ class FireworksCanvas(QWidget):
             'text': ""
         }
         self.use_random_patterns = False
+
+        # Reset physics and launch controls
+        self.gravity = FireworkConfig.GRAVITY
+        self.launch_speed = DEFAULT_LAUNCH_SPEED
+        self.auto_launch = True
 
         # Reset effects
         self.background = None

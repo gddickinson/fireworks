@@ -22,6 +22,8 @@ function snap(fws) {
 export function runShow(c) {
   const show = new Show(c.width, c.height, { rand: pyRand(c.seed) });
   show.particle_count = c.particles;
+  if (c.gravity !== undefined) show.gravity = c.gravity;
+  if (c.launch_speed !== undefined) show.launchSpeed = c.launch_speed;
   const snapshots = [];
   for (let step = 0; step <= c.steps; step++) {
     if (step % c.snap_every === 0) snapshots.push({ step, fireworks: snap(show.fireworks) });

@@ -1,9 +1,8 @@
 // Port of models/particle.py, models/firework.py and the animation logic of gui/canvas.py (FireworksCanvas).
 // Field names follow the Python. With the default options a seeded run reproduces the Python models exactly
 // (checked by fw_engine.test.mjs). Web-only additions, all off by default and marked "web:" below:
-//   gravity / launchSpeed  the desktop Physics sliders exist but are not connected to the simulation;
-//   pattern explosions     the desktop sets firework.pattern but Firework.explode() never reads it;
-//   autoLaunch=false       stops spawning only (the desktop stops the whole animation timer).
+//   pattern explosions     the desktop sets firework.pattern but Firework.explode() never reads it.
+// gravity / launchSpeed / autoLaunch follow gui/canvas.py (checked by the "physics" reference run).
 import { makePattern, RandomPattern } from './fw_patterns.js';
 import { randomColor } from './fw_color.js';
 import { pyRand } from './fw_rand.js';
@@ -41,7 +40,7 @@ export class Firework {
     this.x = x; this.y = y; this.color = color; this.particles = []; this.exploded = false;
     this.rand = rand; this.gravity = gravity; this.pattern = pattern;
     this.velocity_y = -rand.uniform(CONFIG.LAUNCH_SPEED_MIN, CONFIG.LAUNCH_SPEED_MAX);
-    if (launchSpeed !== DEFAULT_LAUNCH_SPEED) this.velocity_y *= launchSpeed / DEFAULT_LAUNCH_SPEED;  // web
+    if (launchSpeed !== DEFAULT_LAUNCH_SPEED) this.velocity_y *= launchSpeed / DEFAULT_LAUNCH_SPEED;
     this.particle_count = particle_count;
   }
   explode() {
@@ -91,13 +90,13 @@ export class Show {
     this.pattern_scale = 1.0; this.pattern_rotation = 0.0;
     this.pattern_options = { star_points: 5, spiral_arms: 3, text: '' };
     this.use_random_patterns = false;
-    this.gravity = CONFIG.GRAVITY; this.launchSpeed = DEFAULT_LAUNCH_SPEED;  // web
+    this.gravity = CONFIG.GRAVITY; this.launchSpeed = DEFAULT_LAUNCH_SPEED;
     this.autoLaunch = true;
     this.background = background; this.weather_effect = weather;
     this.frame = 0;
   }
   update() {                                                  // update_animation
-    this.fireworks = this.fireworks.filter(fw => fw.update());
+    this.fireworks = this.fireworks.filter(fw => fw.update() && (fw.exploded || fw.y > -this.height));
     if (this.autoLaunch && this.rand.random() < CONFIG.SPAWN_RATE) this.add_firework();
     if (this.weather_effect) this.weather_effect.update();
     this.frame++;

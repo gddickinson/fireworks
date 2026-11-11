@@ -113,6 +113,7 @@ class FireworksApp(QMainWindow):
         self.settings = QSettings('Fireworks', 'FireworksApp')
         self.init_ui()
         self.load_settings()
+        self.apply_controls_to_canvas()
 
     def init_ui(self):
         """Initialize the main window UI"""
@@ -241,6 +242,12 @@ class FireworksApp(QMainWindow):
         self.controls.weather_changed.connect(
             self.canvas.set_weather)
 
+        # Physics controls
+        self.controls.gravity_changed.connect(
+            self.canvas.set_gravity)
+        self.controls.launch_speed_changed.connect(
+            self.canvas.set_launch_speed)
+
         # Launch controls
         self.controls.auto_launch_toggled.connect(
             self.canvas.set_auto_launch)
@@ -248,6 +255,18 @@ class FireworksApp(QMainWindow):
             self.canvas.manual_launch)
 
 
+
+    def apply_controls_to_canvas(self):
+        """Give the canvas the values shown in the control panel (signals only fire on changes)"""
+        values = self.controls.get_current_values()
+        self.canvas.set_particle_count(values['particle_count'])
+        self.canvas.set_random_colors(values['random_colors'])
+        self.canvas.set_pattern(values['pattern'])
+        self.canvas.set_background(values['background'])
+        self.canvas.set_weather(values['weather'])
+        self.canvas.set_gravity(values['gravity'])
+        self.canvas.set_launch_speed(values['launch_speed'])
+        self.canvas.set_auto_launch(values['auto_launch'])
 
     def save_settings(self):
         """Save current settings to QSettings"""

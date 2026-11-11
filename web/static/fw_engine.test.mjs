@@ -51,7 +51,7 @@ ok('rocket rises, explodes at the apex into particle_count particles, all expire
   assert.equal(fw.update(), false);
 });
 
-ok('web additions: pattern bursts, gravity, launch speed, auto launch off', () => {
+ok('pattern bursts (web only), gravity, launch speed, auto launch off', () => {
   const fw = new Firework(400, 600, [1, 1, 1], 50, pyRand(1), { pattern: new CirclePattern(1.0, 0, 36) });
   fw.y = 300; fw.explode();
   assert.equal(fw.particles.length, 36);
