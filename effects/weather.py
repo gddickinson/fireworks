@@ -396,15 +396,17 @@ class LightningEffect(WeatherEffect):
         for bolt in self.active_bolts:
             self._draw_bolt(painter, bolt)
 
-    def _draw_bolt(self, painter: QPainter, bolt: LightningBolt):
-        """Draw a single lightning bolt and its branches"""
-        # Calculate opacity based on remaining lifetime
-        opacity = (bolt.current_life / bolt.lifetime) * 255
+    def _draw_bolt(self, painter: QPainter, bolt: LightningBolt, fade: float = None):
+        """Draw a single lightning bolt and its branches (branches fade with their main bolt)"""
+        # Calculate opacity based on remaining lifetime of the main bolt
+        if fade is None:
+            fade = bolt.current_life / bolt.lifetime
+        opacity = fade * 255
 
         # Draw main bolt
         for i, (start, end) in enumerate(bolt.segments):
             # Create gradient effect from center to edge
-            thickness = 3 * (bolt.current_life / bolt.lifetime)
+            thickness = 3 * fade
 
             # Core (bright white)
             painter.setPen(QPen(
@@ -434,4 +436,4 @@ class LightningEffect(WeatherEffect):
 
         # Draw branches
         for branch in bolt.branches:
-            self._draw_bolt(painter, branch)
+            self._draw_bolt(painter, branch, fade)

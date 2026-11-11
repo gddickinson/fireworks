@@ -5,7 +5,7 @@ import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from effects.weather import FogEffect, FogLayer, RainEffect, SnowEffect  # noqa: E402
+from effects.weather import FogEffect, FogLayer, LightningBolt, LightningEffect, RainEffect, SnowEffect  # noqa: E402
 
 
 class TestWeatherResize(unittest.TestCase):
@@ -46,6 +46,36 @@ class TestFogLayerWrap(unittest.TestCase):
         self.assertEqual(layer.x, -400)
         for o, (cx, _) in zip(offsets, layer.control_points):
             self.assertAlmostEqual(cx - layer.x, o)
+
+
+class _RecordingPainter:
+    """Stands in for QPainter: records the alpha of every pen used for a line."""
+
+    def __init__(self):
+        self.alphas = []
+        self.pen = None
+
+    def setPen(self, pen):
+        self.pen = pen
+
+    def drawLine(self, *args):
+        self.alphas.append(self.pen.color().alpha())
+
+
+class TestLightningFade(unittest.TestCase):
+
+    def test_branches_fade_with_their_bolt(self):
+        import random
+        random.seed(1)
+        bolt = None
+        while bolt is None or not bolt.branches:
+            bolt = LightningBolt(400, 0, 420, 450)
+        bolt.current_life = 1
+        bolt.lifetime = 4
+        painter = _RecordingPainter()
+        LightningEffect(800, 600)._draw_bolt(painter, bolt)
+        self.assertGreater(len(painter.alphas), len(bolt.segments) * 2)  # branches drawn too
+        self.assertLessEqual(max(painter.alphas), int(255 * 0.25) + 1, "a branch stayed fully bright")
 
 
 if __name__ == "__main__":

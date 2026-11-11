@@ -191,15 +191,15 @@ export class LightningEffect extends WeatherEffect {
     for (const b of this.active_bolts) this.drawBolt(ctx, b);
     ctx.lineCap = 'butt';
   }
-  drawBolt(ctx, b) {
-    const f = b.current_life / b.lifetime, op = Math.trunc(f * 255) / 255, th = 3 * f;
+  drawBolt(ctx, b, f = b.current_life / b.lifetime) {        // branches fade with their main bolt
+    const op = Math.trunc(f * 255) / 255, th = 3 * f;
     for (const [s, e] of b.segments) {
       ctx.beginPath(); ctx.moveTo(Math.trunc(s[0]), Math.trunc(s[1])); ctx.lineTo(Math.trunc(e[0]), Math.trunc(e[1]));
       ctx.strokeStyle = `rgba(255,255,255,${op})`; ctx.lineWidth = Math.max(th, 0.5); ctx.stroke();
       ctx.strokeStyle = `rgba(200,225,255,${Math.trunc(f * 255 * 0.5) / 255})`; ctx.lineWidth = Math.max(th * 2, 0.5);
       ctx.stroke();
     }
-    for (const br of b.branches) this.drawBolt(ctx, br);
+    for (const br of b.branches) this.drawBolt(ctx, br, f);
   }
 }
 
