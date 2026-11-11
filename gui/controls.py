@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QSlider,
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
 from config import FireworkConfig, DisplayConfig
+import ui_specs as U
 
 class ControlPanel(QWidget):
     # Signal definitions
@@ -58,13 +59,12 @@ class ControlPanel(QWidget):
         # Particle count slider
         count_label = QLabel("Particle Count:")
         self.particle_slider = QSlider(Qt.Orientation.Horizontal)
-        self.particle_slider.setRange(FireworkConfig.MIN_PARTICLES,
-                                    FireworkConfig.MAX_PARTICLES)
-        self.particle_slider.setValue(FireworkConfig.DEFAULT_PARTICLES)
+        self.particle_slider.setRange(U.PARTICLE_COUNT.lo, U.PARTICLE_COUNT.hi)
+        self.particle_slider.setValue(U.PARTICLE_COUNT.default)
         self.particle_slider.valueChanged.connect(self.particle_count_changed.emit)
 
         # Add value display
-        self.count_display = QLabel(str(FireworkConfig.DEFAULT_PARTICLES))
+        self.count_display = QLabel(str(U.PARTICLE_COUNT.default))
         self.particle_slider.valueChanged.connect(
             lambda v: self.count_display.setText(str(v)))
 
@@ -102,15 +102,7 @@ class ControlPanel(QWidget):
         pattern_layout = QHBoxLayout()
         pattern_label = QLabel("Pattern:")
         self.pattern_combo = QComboBox()
-        self.pattern_combo.addItems([
-            "Random",
-            "Circle",
-            "Heart",
-            "Star",
-            "Spiral",
-            "Double Ring",
-            "Text"
-        ])
+        self.pattern_combo.addItems(U.PATTERNS)
         pattern_layout.addWidget(pattern_label)
         pattern_layout.addWidget(self.pattern_combo)
         layout.addLayout(pattern_layout)
@@ -128,8 +120,8 @@ class ControlPanel(QWidget):
         # Scale control
         scale_label = QLabel("Scale:")
         self.scale_slider = QSlider(Qt.Orientation.Horizontal)
-        self.scale_slider.setRange(50, 200)
-        self.scale_slider.setValue(100)
+        self.scale_slider.setRange(U.PATTERN_SCALE.lo, U.PATTERN_SCALE.hi)
+        self.scale_slider.setValue(U.PATTERN_SCALE.default)
         self.scale_value = QLabel("1.0")
         self.scale_slider.valueChanged.connect(
             lambda v: self.scale_value.setText(f"{v/100:.1f}")
@@ -144,8 +136,8 @@ class ControlPanel(QWidget):
         # Rotation control
         rotation_label = QLabel("Rotation:")
         self.rotation_slider = QSlider(Qt.Orientation.Horizontal)
-        self.rotation_slider.setRange(0, 360)
-        self.rotation_slider.setValue(0)
+        self.rotation_slider.setRange(U.PATTERN_ROTATION.lo, U.PATTERN_ROTATION.hi)
+        self.rotation_slider.setValue(U.PATTERN_ROTATION.default)
         self.rotation_value = QLabel("0°")
         self.rotation_slider.valueChanged.connect(
             lambda v: self.rotation_value.setText(f"{v}°")
@@ -165,8 +157,8 @@ class ControlPanel(QWidget):
         star_layout = QGridLayout(star_widget)
         points_label = QLabel("Points:")
         self.star_points = QSpinBox()
-        self.star_points.setRange(3, 12)
-        self.star_points.setValue(5)
+        self.star_points.setRange(U.STAR_POINTS.lo, U.STAR_POINTS.hi)
+        self.star_points.setValue(U.STAR_POINTS.default)
         star_layout.addWidget(points_label, 0, 0)
         star_layout.addWidget(self.star_points, 0, 1)
         self.pattern_specific.addWidget(star_widget)
@@ -176,8 +168,8 @@ class ControlPanel(QWidget):
         spiral_layout = QGridLayout(spiral_widget)
         arms_label = QLabel("Arms:")
         self.spiral_arms = QSpinBox()
-        self.spiral_arms.setRange(1, 8)
-        self.spiral_arms.setValue(3)
+        self.spiral_arms.setRange(U.SPIRAL_ARMS.lo, U.SPIRAL_ARMS.hi)
+        self.spiral_arms.setValue(U.SPIRAL_ARMS.default)
         spiral_layout.addWidget(arms_label, 0, 0)
         spiral_layout.addWidget(self.spiral_arms, 0, 1)
         self.pattern_specific.addWidget(spiral_widget)
@@ -251,16 +243,16 @@ class ControlPanel(QWidget):
         # Gravity control
         gravity_label = QLabel("Gravity:")
         self.gravity_slider = QSlider(Qt.Orientation.Horizontal)
-        self.gravity_slider.setRange(0, 100)  # 0.0 to 1.0 in steps of 0.01
-        self.gravity_slider.setValue(int(FireworkConfig.GRAVITY * 100))
+        self.gravity_slider.setRange(U.GRAVITY.lo, U.GRAVITY.hi)  # 0.0 to 1.0 in steps of 0.01
+        self.gravity_slider.setValue(U.GRAVITY.default)
         self.gravity_slider.valueChanged.connect(
             lambda v: self.gravity_changed.emit(v / 100))
 
         # Launch speed control
         speed_label = QLabel("Launch Speed:")
         self.speed_slider = QSlider(Qt.Orientation.Horizontal)
-        self.speed_slider.setRange(50, 200)  # 5.0 to 20.0 in steps of 0.1
-        self.speed_slider.setValue(100)  # Default 10.0
+        self.speed_slider.setRange(U.LAUNCH_SPEED.lo, U.LAUNCH_SPEED.hi)  # 5.0 to 20.0 in steps of 0.1
+        self.speed_slider.setValue(U.LAUNCH_SPEED.default)  # Default 10.0
         self.speed_slider.valueChanged.connect(
             lambda v: self.launch_speed_changed.emit(v / 10))
 
@@ -279,25 +271,13 @@ class ControlPanel(QWidget):
         # Background scene selector
         background_label = QLabel("Background:")
         self.background_combo = QComboBox()
-        self.background_combo.addItems([
-            "Night Sky",
-            "Cityscape",
-            "Mountains",
-            "Beach",
-            "Forest"
-        ])
+        self.background_combo.addItems(U.BACKGROUNDS)
         self.background_combo.currentTextChanged.connect(self.background_changed.emit)
 
         # Weather effect selector
         weather_label = QLabel("Weather Effect:")
         self.weather_combo = QComboBox()
-        self.weather_combo.addItems([
-            "None",
-            "Rain",
-            "Snow",
-            "Fog",
-            "Lightning"
-        ])
+        self.weather_combo.addItems(U.WEATHER)
         self.weather_combo.currentTextChanged.connect(self.weather_changed.emit)
 
         layout.addWidget(background_label)

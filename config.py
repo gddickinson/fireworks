@@ -1,12 +1,23 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Callable
-from PyQt6.QtGui import QColor
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from PyQt6.QtGui import QColor
+
+# RGB values of the default colours (Qt-free, also read by the web app in web/).
+DEFAULT_FIREWORK_RGB = (255, 0, 0)
+DEFAULT_BACKGROUND_RGB = (0, 0, 20)  # Very dark blue, better for fireworks display
+
 
 def default_firework_color() -> QColor:
-    return QColor(255, 0, 0)
+    from PyQt6.QtGui import QColor  # imported here so the physics constants load without Qt
+    return QColor(*DEFAULT_FIREWORK_RGB)
 
 def default_background_color() -> QColor:
-    return QColor(0, 0, 20)  # Very dark blue, better for fireworks display
+    from PyQt6.QtGui import QColor
+    return QColor(*DEFAULT_BACKGROUND_RGB)
 
 @dataclass
 class FireworkConfig:

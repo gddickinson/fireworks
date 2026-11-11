@@ -1,7 +1,13 @@
 # models/particle.py
+from __future__ import annotations
+
 import math
-from PyQt6.QtGui import QColor
+from typing import TYPE_CHECKING
+
 from config import FireworkConfig
+
+if TYPE_CHECKING:
+    from PyQt6.QtGui import QColor
 
 class Particle:
     def __init__(self, x: float, y: float, angle: float, speed: float,
@@ -25,6 +31,7 @@ class Particle:
         return self.current_life > 0
 
     def get_color(self) -> QColor:
+        from PyQt6.QtGui import QColor  # imported here so the physics loads without Qt (web app)
         fade = self.current_life / self.lifetime
         return QColor(
             self.color.red(),

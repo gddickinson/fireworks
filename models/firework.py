@@ -1,10 +1,14 @@
 # models/firework.py
+from __future__ import annotations
+
 import random
 import math
-from typing import List
+from typing import TYPE_CHECKING, List
 from models.particle import Particle
 from config import FireworkConfig
-from PyQt6.QtGui import QColor
+
+if TYPE_CHECKING:
+    from PyQt6.QtGui import QColor
 
 class Firework:
     def __init__(self, x: float, y: float, color: QColor,

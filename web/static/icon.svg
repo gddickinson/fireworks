@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Firework burst">
+  <rect width="32" height="32" rx="6" fill="#05061a"/>
+  <g stroke="#ffc83d" stroke-width="2" stroke-linecap="round">
+    <path d="M16 13V6M16 19v7M13 16H6M19 16h7M13.9 13.9l-4.9-4.9M18.1 18.1l4.9 4.9M13.9 18.1l-4.9 4.9M18.1 13.9l4.9-4.9"/>
+  </g>
+  <circle cx="16" cy="16" r="2.2" fill="#ff4fa3"/>
+</svg>
