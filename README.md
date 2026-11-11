@@ -9,25 +9,27 @@ A PyQt6-based interactive fireworks simulation application featuring realistic p
 ### Firework Effects
 - Realistic particle physics simulation
 - Customizable particle count and colors
-- Multiple explosion patterns:
+- Explosion pattern shapes (`models/patterns.py`), selectable in the control panel:
   - Circle
   - Heart
   - Star (customizable points)
   - Spiral (adjustable arms)
   - Double Ring
-  - Text patterns
+  - Text (only the letter A has a shape so far)
 - Random pattern generation
 - Adjustable scale and rotation for patterns
+- Note: the desktop burst (`Firework.explode()`) does not use the selected pattern yet; every rocket bursts
+  into a uniform random spray. The web version below draws the pattern shapes.
+- Adjustable gravity and launch speed for new rockets
 
 ### Weather Effects
-- Rain with adjustable intensity
+- Rain (intensity parameter in `RainEffect`, not in the control panel)
 - Snow with wind effects
 - Dynamic fog with layered opacity
 - Lightning with realistic branching
-- Automatic weather transitions
 
 ### Backgrounds
-- Night sky with twinkling stars
+- Night sky with stars
 - Cityscape with illuminated windows
 - Mountain range with snow caps
 - Beach scene with animated waves
@@ -50,7 +52,7 @@ A PyQt6-based interactive fireworks simulation application featuring realistic p
 1. Clone the repository:
 ```bash
 git clone https://github.com/gddickinson/fireworks.git
-cd fireworks-simulator
+cd fireworks
 ```
 
 2. Create and activate a virtual environment (recommended):
@@ -72,7 +74,7 @@ python main.py
 ## Usage
 
 ### Basic Controls
-- **Launch**: Click anywhere in the display window or use auto-launch
+- **Launch**: auto-launch, or untick Auto Launch and use the Launch Firework button
 - **Colors**: Choose specific colors or enable random colors
 - **Patterns**: Select predefined patterns or create custom ones
 - **Weather**: Toggle different weather effects
@@ -162,4 +164,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 george.dickinson@gmail.com
 
-Project Link: [https://github.com/yourusername/fireworks-simulator](https://github.com/gddickinson/fireworks])
+Project Link: [https://github.com/gddickinson/fireworks](https://github.com/gddickinson/fireworks)
