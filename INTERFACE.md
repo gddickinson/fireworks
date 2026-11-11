@@ -16,7 +16,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `effects/weather.py` | Rain, snow, fog, lightning (update + Qt drawing) | `RainEffect`, `SnowEffect`, `FogEffect`, `FogLayer`, `LightningEffect`, `LightningBolt` |
 | `effects/backgrounds.py` | Night sky, cityscape, beach, forest scenes | `NightSkyBackground`, `CityscapeBackground`, `BeachBackground`, `ForestBackground` |
 | `effects/mountains.py` | Mountain ranges with snow caps | `MountainsBackground` |
-| `effects/particle_effects.py`, `effects/sound.py` | Smoke particles and a sound manager (not used by the app; no sound files in the repo) | `SmokeEffect`, `SoundManager` |
+| `effects/particle_effects.py` | Smoke particles (not used by the app) | `SmokeEffect` |
 | `gui/canvas.py` | Display widget: 60 fps timer, spawning, painting | `FireworksCanvas` |
 | `gui/controls.py` | Control panel (signals) built from `ui_specs` | `ControlPanel` |
 | `gui/main_window.py` | Main window, detachable tabs, menus, QSettings, signal wiring | `FireworksApp`, `DetachableTabWidget` |

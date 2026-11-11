@@ -36,8 +36,7 @@ route('about', async () => {
   <ul>
     <li><b>"None" pattern</b>: plain random bursts with the chosen particle count (the desktop list starts at Random).</li>
     <li><b>Click to launch</b> at the clicked spot, keyboard shortcuts, pause and PNG export.</li>
-    <li>The desktop app has no sound (<code>effects/sound.py</code> exists but is not used and its sound files are not in
-      the repository), so neither has the web version.</li>
+    <li>No sound, as in the desktop app.</li>
   </ul>
 
   <h2>Run the desktop app</h2>

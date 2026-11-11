@@ -128,7 +128,6 @@ fireworks/
 ├── effects/               # Special effects modules
 │   ├── backgrounds.py     # Background scenes
 │   ├── particle_effects.py # Particle system
-│   ├── sound.py          # Sound effects
 │   └── weather.py        # Weather effects
 ├── gui/                  # User interface components
 │   ├── canvas.py        # Display canvas

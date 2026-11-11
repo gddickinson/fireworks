@@ -1,6 +1,6 @@
 # effects/__init__.py
 """
-Special effects including weather, backgrounds, and sound.
+Special effects: weather, backgrounds and smoke particles.
 """
 
 from effects.weather import (
@@ -14,7 +14,6 @@ from effects.backgrounds import (
     NightSkyBackground,
     CityscapeBackground
 )
-from effects.sound import SoundManager
 from effects.particle_effects import (
     SmokeEffect,
     SmokeParticle
