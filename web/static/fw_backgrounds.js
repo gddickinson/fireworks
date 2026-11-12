@@ -58,6 +58,13 @@ export class MountainsBackground {
     this.width = w; this.height = h; this.rand = rand;
     this.mountains = RANGE_SPECS.map(([n, hr]) => this.range(n, hr));
     this.stars = genStars(rand, w, h, 0.7);
+    this.snow_caps = [];                                      // [range index, x, y, width], one per peak
+    this.mountains.forEach((rng, k) => {
+      for (let i = 1; i < rng.length - 1; i++) {
+        const [x, y] = rng[i];
+        if (y < rng[i - 1][1] && y < rng[i + 1][1]) this.snow_caps.push([k, x, y, rand.uniform(20, 40)]);
+      }
+    });
   }
   range(peaks, [lo, hi]) {
     const R = this.rand, pts = [[0, this.height]], seg = this.width / (peaks - 1);
@@ -82,12 +89,8 @@ export class MountainsBackground {
       ctx.fillStyle = grad(ctx, 0, this.height, [[0, c.map(v => Math.min(255, Math.round(v * 1.2)))], [1, c.map(v => Math.round(v / 1.2))]]);
       ctx.fill();
       ctx.strokeStyle = css(255, 255, 255, 180); ctx.lineWidth = 2;
-      for (let i = 1; i < rng.length - 1; i++) {
-        const [x, y] = rng[i];
-        if (y < rng[i - 1][1] && y < rng[i + 1][1]) {         // a peak: snow cap (width re-drawn every frame, as in Python)
-          const sw = this.rand.uniform(20, 40);
-          ctx.beginPath(); ctx.moveTo(x - sw / 2, y); ctx.quadraticCurveTo(x, y - sw / 4, x + sw / 2, y); ctx.stroke();
-        }
+      for (const [r, x, y, sw] of this.snow_caps) {
+        if (r === k) { ctx.beginPath(); ctx.moveTo(x - sw / 2, y); ctx.quadraticCurveTo(x, y - sw / 4, x + sw / 2, y); ctx.stroke(); }
       }
     });
   }

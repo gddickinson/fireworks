@@ -10,6 +10,7 @@ class MountainsBackground:
         self.colors: List[QColor] = []  # one per range, filled by _generate_mountain_range
         self.mountains = self._generate_mountains()
         self.stars = self._generate_stars()
+        self.snow_caps = self._generate_snow_caps()
 
     def _generate_mountains(self) -> List[List[Tuple[float, float]]]:
         """Generate multiple mountain ranges with different heights and positions"""
@@ -94,6 +95,16 @@ class MountainsBackground:
             
         return stars
 
+    def _generate_snow_caps(self) -> List[Tuple[int, float, float, float]]:
+        """One snow cap per peak (a point higher than both neighbours): (range index, x, y, width)"""
+        caps = []
+        for k, mountain_range in enumerate(self.mountains):
+            for i in range(1, len(mountain_range) - 1):
+                x, y = mountain_range[i]
+                if y < mountain_range[i - 1][1] and y < mountain_range[i + 1][1]:
+                    caps.append((k, x, y, random.uniform(20, 40)))
+        return caps
+
     def draw(self, painter: QPainter):
         """Draw the complete mountain scene"""
         # Draw sky gradient
@@ -110,7 +121,7 @@ class MountainsBackground:
             painter.drawPoint(int(x), int(y))
 
         # Draw mountain ranges (from back to front)
-        for mountain_range, base_color in zip(self.mountains, self.colors):
+        for k, (mountain_range, base_color) in enumerate(zip(self.mountains, self.colors)):
             # Create mountain shape
             path = QPainterPath()
             path.moveTo(QPointF(*mountain_range[0]))
@@ -131,16 +142,9 @@ class MountainsBackground:
             snow_pen = QPen(QColor(255, 255, 255, 180), 2)
             painter.setPen(snow_pen)
             
-            # Find peaks (local minima in y-coordinates)
-            for i in range(1, len(mountain_range) - 1):
-                prev_y = mountain_range[i-1][1]
-                curr_y = mountain_range[i][1]
-                next_y = mountain_range[i+1][1]
-                
-                if curr_y < prev_y and curr_y < next_y:
-                    # This is a peak - add snow
-                    x, y = mountain_range[i]
-                    snow_width = random.uniform(20, 40)
+            # Snow caps of this range's peaks (widths fixed when the scene is generated)
+            for cap_range, x, y, snow_width in self.snow_caps:
+                if cap_range == k:
                     snow_path = QPainterPath()
                     snow_path.moveTo(x - snow_width/2, y)
                     snow_path.quadTo(x, y - snow_width/4, x + snow_width/2, y)

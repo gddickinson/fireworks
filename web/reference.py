@@ -212,7 +212,7 @@ def background_scenes(seed: int = 5, w: int = 800, h: int = 600) -> dict:
         bg = B.CityscapeBackground(w, h)
         out["Cityscape"] = {"buildings": bg.buildings, "windows": bg.windows}
         bg = B.MountainsBackground(w, h)
-        out["Mountains"] = {"mountains": bg.mountains, "stars": bg.stars}
+        out["Mountains"] = {"mountains": bg.mountains, "stars": bg.stars, "snow_caps": bg.snow_caps}
         bg = B.BeachBackground(w, h)
         out["Beach"] = {"stars": bg.stars, "waves": bg.waves, "palm_trees": bg.palm_trees}
         bg = B.ForestBackground(w, h)

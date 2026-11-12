@@ -27,6 +27,22 @@ class TestMountains(unittest.TestCase):
         self.assertLess(max(r, g, b), 120, (r, g, b))      # was white-ish (the pen colour)
         self.assertGreater(b, r)
 
+    def _render(self, bg):
+        img = QImage(400, 300, QImage.Format.Format_ARGB32)
+        img.fill(QColor(0, 0, 0))
+        p = QPainter(img)
+        bg.draw(p)
+        p.end()
+        return img
+
+    def test_snow_caps_are_fixed_per_peak_not_redrawn_at_random(self):
+        bg = MountainsBackground(400, 300)
+        peaks = sum(1 for rng in bg.mountains for i in range(1, len(rng) - 1)
+                    if rng[i][1] < rng[i - 1][1] and rng[i][1] < rng[i + 1][1])
+        self.assertEqual(len(bg.snow_caps), peaks)
+        self.assertTrue(all(20 <= w <= 40 for _, _, _, w in bg.snow_caps))
+        self.assertEqual(self._render(bg), self._render(bg), "the scene changes between frames (flicker)")
+
 
 if __name__ == "__main__":
     unittest.main()

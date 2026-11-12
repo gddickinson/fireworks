@@ -79,7 +79,7 @@ export function backgroundScenes(seed = 5, w = 800, h = 600) {
   const ns = mk('Night Sky'), cs = mk('Cityscape'), mo = mk('Mountains'), be = mk('Beach'), fo = mk('Forest');
   return {
     'Night Sky': { stars: ns.stars }, Cityscape: { buildings: cs.buildings, windows: cs.windows },
-    Mountains: { mountains: mo.mountains, stars: mo.stars },
+    Mountains: { mountains: mo.mountains, stars: mo.stars, snow_caps: mo.snow_caps },
     Beach: { stars: be.stars, waves: be.waves, palm_trees: be.palm_trees },
     Forest: { stars: fo.stars, trees: fo.trees, fireflies: fo.fireflies },
   };
