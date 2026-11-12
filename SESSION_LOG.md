@@ -30,4 +30,5 @@
 - Removed unused `effects/sound.py` and its references (`tests/test_effects_package.py`); `_archive/` untouched.
 - Checks: full suite 78 passed (offscreen Qt), test_web 19 passed (also without PyQt6), node 11 + 11,
   screenshots static/base all ok, phone 0 px; desktop text burst checked offscreen.
-- Still open (not requested): snow caps re-drawn with a new random width every frame (flicker).
+- Snow-cap flicker fixed (4497c37): cap widths drawn once per peak at scene generation (desktop and web,
+  seeded check covers them); test_snow_caps_are_fixed_per_peak_not_redrawn_at_random. Suite 79 passed.
