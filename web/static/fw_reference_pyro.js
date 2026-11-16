@@ -44,6 +44,7 @@ function snap(sim, counts) {
 export function runPyro(c) {
   const rand = pyRand(c.seed), sim = new Sim(rand, { aspect: c.aspect ?? 16 / 9 });
   sim.gravity_scale = c.gravity ?? 1; sim.height_scale = c.height ?? 1; sim.star_scale = c.stars ?? 1;
+  sim.lift_time = 'lift' in c ? c.lift : 3;
   const d = new Director(rand);
   if (c.mode === 'finale') d.startFinale(sim);
   else if (c.mode === 'pattern') d.pattern = new HeartPattern();

@@ -92,6 +92,7 @@ export class RealView {
     m.gravity_scale = s.gravity / 0.1;
     m.height_scale = Math.min(1.3, Math.max(0.35, (s.launchSpeed / 10) ** 2));
     m.budget = Math.round(30000 * this.quality);
+    m.lift_time = this.liftTime === undefined ? 3 : this.liftTime;
   }
   launch(xFrac = null, type = null) {
     this.sync();

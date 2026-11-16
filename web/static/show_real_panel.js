@@ -17,6 +17,9 @@ export function buildShowGroup(host, V, st, actions) {
       <label for="shell">Shell type</label>
       <select id="shell"><option value="mixed">Mixed (a real show)</option>${TYPES.map(t => `<option value="${t}"${t === st.shell_type ? ' selected' : ''}>${esc(LABELS[t])}</option>`).join('')}</select>
       <div class="btns"><button id="finale">Start the finale</button><a class="btn alt" href="#/messages">Messages…</a></div>
+      <label for="lift">Lift time <b id="liftv"></b></label>
+      <input type="range" id="lift" min="1.5" max="5" step="0.5" value="${st.lift_time ?? 3}">
+      <p class="small mute">A real 150 m shell climbs for about 4.5 s; shorter lift times play the same climb faster. 5 = real time.</p>
       <label class="chk" for="sound"><input type="checkbox" id="sound"${st.sound ? ' checked' : ''}> Sound (booms arrive late: sound travels 343 m/s)</label>
     </div>
     <p class="small mute" id="rnote">${real ? 'Pattern, colour, particle count, gravity and launch speed below apply to new shells.'
@@ -31,5 +34,7 @@ export function buildShowGroup(host, V, st, actions) {
     q('#finale').onclick = () => actions.finale();
     q('#sound').onchange = () => { st.sound = q('#sound').checked; actions.sound(st.sound); };
     V.director.shell_type = st.shell_type;
+    const lift = q('#lift'), show = () => { const v = +lift.value; q('#liftv').textContent = v >= 5 ? 'real time' : v + ' s'; V.liftTime = v >= 5 ? null : v; st.lift_time = v; };
+    lift.oninput = show; show();
   }
 }

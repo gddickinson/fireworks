@@ -25,7 +25,7 @@ SHELL_DRAG = 0.006   # shells: terminal velocity ~40 m/s
 class Star:
     __slots__ = ("kind", "x", "y", "z", "vx", "vy", "vz", "k", "age", "life", "color", "color2", "change",
                  "bright", "size", "trail", "trail_color", "trail_life", "acc", "glitter", "strobe", "phase",
-                 "end", "recipe", "target", "glide", "hold", "nograv")
+                 "end", "recipe", "target", "glide", "hold", "nograv", "theta0", "rate")
 
     def __init__(self, kind, x, y, z, vx, vy, vz, k, life, color, bright=1.0, size=1.0):
         self.kind = kind
@@ -52,6 +52,8 @@ class Star:
         self.glide = 0.0      # message star: time the glide starts
         self.hold = 0.0       # message star: time it is released to gravity
         self.nograv = False
+        self.theta0 = 0.0     # rising shell: exact drag trajectory parameter atan(v0 sqrt(k / g)) (0: integrate)
+        self.rate = 1.0       # rising shell: playback rate of its climb (Lift time option)
 
 
 def sphere_dirs(n: int, rot: float):
@@ -84,6 +86,7 @@ class Sim:
         self.gravity_scale = 1.0
         self.height_scale = 1.0
         self.star_scale = 1.0
+        self.lift_time = 3.0          # s from launch to burst at most: longer climbs are played faster (None: real time)
         self._new: list = []
         self._pending: list = []      # events raised between frames (launches), reported by the next step
 
@@ -117,6 +120,11 @@ class Sim:
         vy = math.sqrt(g / k * (math.exp(2.0 * k * h) - 1.0)) if g > 0 else 60.0
         vx = R.uniform(-1.5, 1.5) + tilt * vy
         s = Star("shell", x, 0.0, z, vx, vy, 0.0, k, 30.0 if g > 0 else h / vy, (255, 160, 70), 1.0, 1.4)
+        if g > 0:
+            s.theta0 = math.atan(vy * math.sqrt(k / g))
+            climb = s.theta0 / math.sqrt(g * k)       # physical time to the top (about 4-5 s for 150 m)
+            if self.lift_time is not None and self.lift_time < climb:
+                s.rate = climb / self.lift_time      # Lift time: the same trajectory, played faster
         s.trail = (110.0 if recipe["type"] == "palm" else 55.0) * self.quality
         s.trail_color = (255, 150, 52)
         s.trail_life = 0.55
@@ -141,11 +149,19 @@ class Sim:
                 s.age += DT
                 alive.append(s)
                 continue
-            if s.target is not None and s.glide <= s.age < s.hold:
+            if s.theta0 > 0.0:                    # rising shell: exact solution of the climb against drag
+                th = max(0.0, s.theta0 - math.sqrt(g * s.k) * (s.age + DT) * s.rate)
+                s.vy = math.sqrt(g / s.k) * math.tan(th)
+                s.x += s.vx * DT * s.rate
+                s.y = math.log(math.cos(th) / math.cos(s.theta0)) / s.k
+            elif s.target is not None and s.glide <= s.age < s.hold:
                 w = 5.5                           # critically damped glide to the letter position
                 s.vx += (w * w * (s.target[0] - s.x) - 2.0 * w * s.vx) * DT
                 s.vy += (w * w * (s.target[1] - s.y) - 2.0 * w * s.vy) * DT
                 s.vz += (-2.0 * w * s.vz) * DT
+                s.x += s.vx * DT
+                s.y += s.vy * DT
+                s.z += s.vz * DT
             else:
                 rx = s.vx - wind
                 sp = math.sqrt(rx * rx + s.vy * s.vy + s.vz * s.vz)
@@ -155,9 +171,9 @@ class Sim:
                 s.vz -= d * s.vz
                 if not (s.nograv and s.age < s.glide):
                     s.vy -= g * DT
-            s.x += s.vx * DT
-            s.y += s.vy * DT
-            s.z += s.vz * DT
+                s.x += s.vx * DT
+                s.y += s.vy * DT
+                s.z += s.vz * DT
             s.age += DT
             if s.trail > 0.0 and not crowded:
                 s.acc += s.trail * DT
@@ -190,9 +206,9 @@ class Sim:
 
     def _spark(self, s: Star) -> Star:
         R = self.rand
-        j = 6.0 if s.kind != "shell" else 3.0
-        sp = Star("spark", s.x, s.y, s.z, s.vx * 0.15 + R.uniform(-j, j), s.vy * 0.15 + R.uniform(-j, j),
-                  s.vz * 0.15, 1.2, s.trail_life * R.uniform(0.5, 1.0), s.trail_color, 0.8 if s.glitter else 0.55,
+        f, j = (0.15, 6.0) if s.kind != "shell" else (0.0, 3.0)   # a shell's tail stays behind it
+        sp = Star("spark", s.x, s.y, s.z, s.vx * f + R.uniform(-j, j), s.vy * f + R.uniform(-j, j),
+                  s.vz * f, 1.2, s.trail_life * R.uniform(0.5, 1.0), s.trail_color, 0.8 if s.glitter else 0.55,
                   0.7)
         sp.glitter = s.glitter
         sp.phase = s.age * 13.0

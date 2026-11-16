@@ -26,12 +26,24 @@ def _burst_of(sim, d, typ):
 
 def test_shell_bursts_at_requested_height():
     sim, d = _sim()
+    sim.lift_time = None  # real time
     sh = sim.launch(d.recipe("peony"), 0.0, 500.0, 0.6)
     want = 0.6 * sim.y_top(500.0)
     while sh in sim.stars:
         sim.step()
     assert abs(sh.y - want) < 0.03 * want
     assert 3.0 < sim.time < 6.0  # a real 150 m shell rises for about 4 s
+
+
+def test_lift_time_plays_the_climb_faster_to_the_same_height():
+    for lift in (2.0, 3.0):
+        sim, d = _sim()
+        sim.lift_time = lift
+        sh = sim.launch(d.recipe("peony"), 0.0, 500.0, 0.6)
+        while sh in sim.stars:
+            sim.step()
+        assert abs(sim.time - lift) < 2 * DT
+        assert abs(sh.y - 0.6 * sim.y_top(500.0)) < 0.01 * sh.y
 
 
 def test_drag_slows_stars_to_terminal_velocity():

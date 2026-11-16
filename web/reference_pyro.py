@@ -19,6 +19,7 @@ from web.reference import PyRand
 PYRO_CASES = [
     {"name": "finale", "seed": 11, "seconds": 46, "snap_every": 120, "mode": "finale"},
     {"name": "auto_mixed", "seed": 23, "seconds": 20, "snap_every": 120, "mode": "auto", "aspect": 0.5},
+    {"name": "physical_lift", "seed": 29, "seconds": 12, "snap_every": 120, "mode": "auto", "lift": None},
     {"name": "every_type", "seed": 31, "seconds": 10, "snap_every": 60, "mode": "types"},
     {"name": "heart_pattern", "seed": 37, "seconds": 9, "snap_every": 60, "mode": "pattern",
      "gravity": 0.5, "height": 1.2, "stars": 0.6},
@@ -58,6 +59,7 @@ def run_pyro(case: dict) -> dict:
     sim.gravity_scale = case.get("gravity", 1.0)
     sim.height_scale = case.get("height", 1.0)
     sim.star_scale = case.get("stars", 1.0)
+    sim.lift_time = case.get("lift", 3.0)
     d = Director(rand)
     mode = case["mode"]
     if mode == "finale":
