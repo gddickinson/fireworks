@@ -110,7 +110,29 @@ def test_js_fixture_is_current():
     from web.reference import fixture, has_qt
     committed = json.loads(make_js_fixtures.FIXTURE.read_text())
     fresh = json.loads(make_js_fixtures.dumps(fixture()))
-    assert "qt" in committed
+    assert "qt" in committed and "pyro" in committed
     if not has_qt():
         committed.pop("qt")
+    _drop_discrete_on_ci(committed, fresh)
     _close(committed, fresh)
+
+
+def _drop_discrete_on_ci(committed: dict, fresh: dict, ci: bool | None = None) -> None:
+    """The realistic-engine runs (models/pyro.py) take discrete steps from float maths (a shell bursts on the frame
+    its velocity turns negative, after exp/cos/sin from the platform's libm), so on CI (Linux) they are not compared
+    with the macOS fixture; the node tests still check JS against the committed fixture there."""
+    import os
+    if ci is None:
+        ci = bool(os.environ.get("CI"))
+    if ci:
+        committed.pop("pyro", None)
+        fresh.pop("pyro", None)
+
+
+def test_drop_discrete_on_ci_helper():
+    a, b = {"pyro": [1], "shows": [2]}, {"pyro": [3], "shows": [2]}
+    _drop_discrete_on_ci(a, b, ci=True)
+    assert a == b == {"shows": [2]}
+    a = {"pyro": [1]}
+    _drop_discrete_on_ci(a, {}, ci=False)
+    assert a == {"pyro": [1]}

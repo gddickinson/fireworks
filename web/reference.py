@@ -245,6 +245,8 @@ def fixture(include_qt: bool | None = None) -> dict:
     config = {f.name: getattr(FireworkConfig, f.name) for f in fields(FireworkConfig) if not f.name.endswith("_COLOR")}
     data = {"mulberry32_seed1": mulberry_stream(), "config": config, "patterns": pattern_points(),
             "shows": [run_show(c) for c in SHOW_CASES]}
+    from web.reference_pyro import pyro_fixture  # late: reference_pyro imports PyRand from here
+    data["pyro"] = pyro_fixture()
     if include_qt is None:
         include_qt = has_qt()
     if include_qt:
