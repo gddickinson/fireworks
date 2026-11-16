@@ -56,7 +56,9 @@ def star_rgb(star, time: float = 0.0, flashes: bool = True):
     c = _mix((255.0, 250.0, 240.0), base, _smooth(0.0, 0.12, t))
     c = _mix(c, EMBER, _smooth(0.78, 1.0, t))
     i = star.bright * (1.0 + 1.2 * (1.0 - _smooth(0.0, 0.08, t))) * (1.0 - _smooth(0.82, 1.0, t))
-    if star.strobe > 0 and flashes:
+    if star.target is not None:                         # message letters: a subtle twinkle
+        i *= 0.88 + 0.12 * math.sin(star.phase + star.age * 9.0)
+    elif star.strobe > 0 and flashes:
         i *= 1.0 if (star.age + star.phase) % star.strobe < star.strobe * 0.35 else 0.05
     elif star.glitter and flashes:
         i *= 0.55 + 0.9 * (0.5 + 0.5 * math.sin(star.phase + star.age * 31.0)) ** 4

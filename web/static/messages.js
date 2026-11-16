@@ -43,6 +43,7 @@ route('messages', async (args, query) => {
   </div>`;
   const V = new RealView($('#sky'), { background: o.bg, label: 'Fireworks writing your message in the sky', seed: 2027 });
   V.show.autoLaunch = false; V.show.use_random_colors = true;
+  V.bloom = 0.35;                                            // less glow: letters stay crisp
   V.on(ev => audio.onEvents(ev));
   const ui = {
     get text() { return $('#mt').value; }, get name() { return $('#mn').value.trim(); },
@@ -56,7 +57,7 @@ route('messages', async (args, query) => {
     for (const m of list) {
       const { points, lines } = textPoints(m, V.sim.aspect, V.sim.horizon, { font: ui.font, mode: ui.mode, color: hexToRgb(ui.c1),
         color2: hexToRgb(ui.c2), size: ui.size / 100,
-        density: Math.min(950, Math.max(320, [...m].length * 60)) * (V.quality < 0.8 ? 0.7 : 1) });
+        density: Math.min(1800, Math.max(500, [...m].length * 115)) * (V.quality < 0.8 ? 0.7 : 1) });
       if (points.length) out.push({ points, hold: ui.hold, lines });
     }
     $('#lines').textContent = out.length ? out.map(m => m.lines.join(' / ')).join('  →  ') : 'Type a message.';

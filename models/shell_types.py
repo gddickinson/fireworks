@@ -191,13 +191,12 @@ def _message(sim, s, rec):
         sp = R.uniform(18.0, 34.0)
         r = math.sqrt(1.0 - e * e)
         st = Star("star", s.x, s.y, s.z, r * math.cos(a) * sp + u * 0.8, e * sp + v * 0.8, r * math.sin(a) * sp,
-                  0.06, 0.0, (p[2], p[3], p[4]), 1.0, 0.9)
+                  0.06, 0.0, (p[2], p[3], p[4]), 0.9, 0.5)
         st.target = (s.x + u, s.y + v)
         st.glide = R.uniform(0.25, 0.45)
         st.hold = st.glide + 1.1 + hold
         st.life = st.hold + R.uniform(1.4, 2.0)
         st.nograv = True
-        st.glitter = True
         st.phase = i * 0.37
-        st.trail, st.trail_color, st.trail_life = 3.0 * sim.quality, (p[2], p[3], p[4]), 0.5
+        st.trail, st.trail_color, st.trail_life = 0.8 * sim.quality, (p[2], p[3], p[4]), 0.35
         sim.add(st)

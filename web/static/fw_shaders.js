@@ -15,8 +15,9 @@ void main() {
 export const STAR_FS = `#version 300 es
 precision mediump float; in vec3 vcol; in float vcore; out vec4 o;
 void main() {
-  vec2 d = gl_PointCoord - 0.5; float r2 = dot(d, d) * 25.0;   // r in core radii
-  float a = exp(-r2 * 1.6) * 2.2 * vcore + exp(-r2 * 0.18) * 0.12;
+  vec2 d = gl_PointCoord - 0.5; float r2 = dot(d, d) * 25.0;   // r in core radii; the sprite's edge is r = 2.5
+  float edge = max(0.0, 1.0 - r2 / 6.25); edge *= edge;          // reaches exactly 0 at the circle: never a square
+  float a = (exp(-r2 * 1.6) * 2.2 * vcore + exp(-r2 * 0.25) * 0.14) * edge;
   o = vec4(vcol * a, 0.0);
 }`;
 

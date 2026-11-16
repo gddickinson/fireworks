@@ -55,6 +55,7 @@ export function textPoints(text, aspect, horizon, opts = {}) {
   const PX = 96, spec = (FONTS[font] || FONTS.sans)[1].replace('PX', PX);
   const cv = document.createElement('canvas'), c = cv.getContext('2d', { willReadFrequently: true });
   c.font = spec;
+  if ('letterSpacing' in c) c.letterSpacing = Math.round(PX * 0.08) + 'px';   // airier letters read better as dots
   const z = 450, widthM = 0.86 * z * aspect / FOCAL * size, heightM = 0.62 * z * horizon / FOCAL * size;
   let best = null;
   const paras = text.split('\n').length;
@@ -67,7 +68,8 @@ export function textPoints(text, aspect, horizon, opts = {}) {
   }
   const { lines, w, h, k } = best, pad = 8;
   cv.width = Math.ceil(w + 2 * pad); cv.height = Math.ceil(h + 2 * pad);
-  c.font = spec; c.textBaseline = 'middle'; c.textAlign = 'center'; c.fillStyle = '#fff';
+  c.font = spec; if ('letterSpacing' in c) c.letterSpacing = Math.round(PX * 0.08) + 'px';
+  c.textBaseline = 'middle'; c.textAlign = 'center'; c.fillStyle = '#fff';
   const lineY = i => pad + (i + 0.5) * PX * 1.15;
   lines.forEach((l, i) => c.fillText(l, cv.width / 2, lineY(i)));
   const img = c.getImageData(0, 0, cv.width, cv.height).data, W = cv.width;

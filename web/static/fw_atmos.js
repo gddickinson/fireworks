@@ -26,7 +26,7 @@ export function buildParticles(sim, cam, buf, { flashes = true, pxScale = 1, fir
     const z = s.z, x = W / 2 + F * s.x / z, y = cam.hz - F * s.y / z;
     if (x < -40 || x > W + 40 || y < -40 || y > H + 40) continue;
     const ext = Math.exp(-(z - 300) / 2600) * 1.6 * I * k;
-    const core = Math.max(1.1 * pxScale, F * 0.42 * s.size / z);
+    const core = Math.max(1, 1.1 * pxScale, F * 0.42 * s.size / z);
     const o = n * STRIDE;
     buf[o] = x; buf[o + 1] = y; buf[o + 2] = core;
     buf[o + 3] = C[0] * ext; buf[o + 4] = C[1] * ext; buf[o + 5] = C[2] * ext;

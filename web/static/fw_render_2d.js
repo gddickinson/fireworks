@@ -5,6 +5,22 @@ import { STRIDE } from './fw_atmos.js';
 
 const canvas = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; };
 const lin = v => Math.min(255, Math.round(v * 150));
+// Soft round star sprites (hot core, glow), one per colour quantised to 16 levels per channel, made on first use.
+const SPRITES = new Map();
+function sprite(r, g, b) {
+  const key = (r >> 4) << 8 | (g >> 4) << 4 | (b >> 4);
+  let c = SPRITES.get(key);
+  if (!c) {
+    c = canvas(24, 24);
+    const x = c.getContext('2d'), gr = x.createRadialGradient(12, 12, 0, 12, 12, 12);
+    const q = v => (v >> 4) * 17, R = q(r), G = q(g), B = q(b), hot = v => Math.min(255, v + 90);
+    gr.addColorStop(0, `rgba(${hot(R)},${hot(G)},${hot(B)},1)`); gr.addColorStop(0.2, `rgba(${R},${G},${B},0.85)`);
+    gr.addColorStop(0.45, `rgba(${R},${G},${B},0.25)`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`);
+    x.fillStyle = gr; x.fillRect(0, 0, 24, 24);
+    SPRITES.set(key, c);
+  }
+  return c;
+}
 const tone = v => Math.min(255, Math.round(255 * Math.pow(v / (1 + v), 1 / 2.2) * 1.15));
 
 export class Canvas2DRenderer {
@@ -12,7 +28,7 @@ export class Canvas2DRenderer {
   resize(W, H) {
     if (W === this.W && H === this.H) return;
     this.W = W; this.H = H;
-    this.fw = canvas(W, H); this.glow = canvas(W >> 3, H >> 3); this.light = canvas(W >> 2, H >> 2);
+    this.fw = canvas(W, H); this.glow = canvas(W >> 2, H >> 2); this.light = canvas(W >> 2, H >> 2);
     this.vig = canvas(W, H);
     const v = this.vig.getContext('2d'), g = v.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.hypot(W, H) / 2);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)');
@@ -59,14 +75,15 @@ export class Canvas2DRenderer {
     f.globalCompositeOperation = 'lighter';
     const P = F.parts;
     for (let i = 0; i < F.n; i++) {
-      const o = i * STRIDE, s = P[o + 2] * 1.6;
-      f.fillStyle = `rgb(${lin(P[o + 3])},${lin(P[o + 4])},${lin(P[o + 5])})`;
-      f.fillRect(P[o] - s / 2, P[o + 1] - s / 2, s, s);
+      const o = i * STRIDE, s = P[o + 2] * 4.5;
+      f.drawImage(sprite(lin(P[o + 3]), lin(P[o + 4]), lin(P[o + 5])), P[o] - s / 2, P[o + 1] - s / 2, s, s);
     }
     c.globalCompositeOperation = 'lighter';
     c.drawImage(this.fw, 0, 0);
     const g = this.glow.getContext('2d');
-    g.clearRect(0, 0, this.glow.width, this.glow.height); g.drawImage(this.fw, 0, 0, this.glow.width, this.glow.height);
+    g.clearRect(0, 0, this.glow.width, this.glow.height);
+    g.filter = 'blur(1.5px)';                                  // round glows (ignored where unsupported)
+    g.drawImage(this.fw, 0, 0, this.glow.width, this.glow.height); g.filter = 'none';
     c.globalAlpha = 0.9; c.drawImage(this.glow, 0, 0, W, H); c.globalAlpha = 1;
     if (S.water) {                                            // mirrored, dimmed fireworks on the water
       c.save(); c.beginPath(); c.rect(0, S.water, W, H - S.water); c.clip();

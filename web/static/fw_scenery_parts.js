@@ -96,24 +96,40 @@ export function range(c, m, W, H, seed, opts, colTop, colBot, albedo, bottom = H
   fillRidge(c, W, H, r, g, bottom); fillRidge(m, W, H, r, mat(albedo), bottom);
   return r;
 }
-// Snow on the highest parts of a ridge: polygons hugging the crest wherever it rises above `line` (px), thicker
-// higher up, with a ragged lower edge; drawn semi-transparent so the haze of the range shows through.
+// Snow on the highest parts of a ridge, wherever the crest rises above `line` (px): one polygon per snowy stretch,
+// hugging the crest, deeper higher up, with a ragged noise-shaped lower edge. Shading follows the smoothed slope
+// (faces turned left, towards the moon, are lighter) through a horizontal gradient, so it varies smoothly at any
+// resolution, and the snow fades downwards. The material map marks snow as bright (lit strongly by bursts).
 export function snow(c, m, { ys, step }, line, depth, seed) {
-  let run = [];
-  const flush = () => {
-    if (run.length > 2) for (const [k, col] of [[c, rgb(150, 160, 186, 0.5)], [m, mat(0.9)]]) {
-      k.beginPath();
-      run.forEach(([x, y]) => k.lineTo(x, y));
-      for (let r = run.length - 1; r >= 0; r--) {
-        const [x, y] = run[r], h = Math.min(depth, (line - y) * 0.9) * (0.45 + 0.9 * fbm1(seed, x * 0.02, 4));
-        k.lineTo(x, y + Math.max(0, h));
-      }
-      k.closePath(); k.fillStyle = col; k.fill();
+  const W = c.canvas.width, H = c.canvas.height;
+  const lower = (x, y) => y + Math.max(0, Math.min(depth, (line - y) * 0.9) * (0.35 + 0.95 * fbm1(seed, x * 0.018, 5)));
+  const smoothY = i => { let a = 0, n = 0; for (let k = -6; k <= 6; k++) { const v = ys[i + k]; if (v !== undefined) { a += v; n++; } } return a / n; };
+  const draw = idx => {                                       // idx: crest column indices of one snowy stretch
+    if (idx.length < 3) return;
+    const x0 = idx[0] * step, x1 = idx[idx.length - 1] * step, top = Math.min(...idx.map(i => ys[i]));
+    const bot = Math.max(...idx.map(i => lower(i * step, ys[i])));
+    const path = k => {
+      k.beginPath(); idx.forEach(i => k.lineTo(i * step, ys[i]));
+      for (let r = idx.length - 1; r >= 0; r--) k.lineTo(idx[r] * step, lower(idx[r] * step, ys[idx[r]]));
+      k.closePath();
+    };
+    const hg = c.createLinearGradient(x0, 0, x1 + 0.01, 0);
+    for (let r = 0; r < idx.length; r += 3) {                 // slope -> brightness, smooth along x
+      const i = idx[r], slope = (smoothY(i + 3) - smoothY(i - 3)) / (6 * step), b = Math.min(1, Math.max(0, 0.5 + slope * 1.6));
+      hg.addColorStop((i * step - x0) / Math.max(1, x1 - x0), rgb(105 + 80 * b, 115 + 78 * b, 148 + 70 * b, 0.5 + 0.25 * b));
     }
-    run = [];
+    const off = document.createElement('canvas'); off.width = W; off.height = H;
+    const o = off.getContext('2d');
+    path(o); o.fillStyle = hg; o.fill();
+    const vg = o.createLinearGradient(0, top, 0, bot + 1);
+    vg.addColorStop(0, 'rgba(0,0,0,1)'); vg.addColorStop(1, 'rgba(0,0,0,0.12)');
+    o.globalCompositeOperation = 'destination-in'; o.fillStyle = vg; o.fillRect(0, 0, W, H);
+    c.drawImage(off, 0, 0);
+    path(m); m.fillStyle = mat(0.85); m.fill();
   };
-  ys.forEach((y, i) => { if (y < line) run.push([i * step, y]); else flush(); });
-  flush();
+  let run = [];
+  ys.forEach((y, i) => { if (y < line) run.push(i); else { draw(run); run = []; } });
+  draw(run);
 }
 
 // Conifer silhouette (layered jagged tiers) or broadleaf (noisy blob) at base (x, y), height h.

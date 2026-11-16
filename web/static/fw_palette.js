@@ -31,7 +31,8 @@ export function starRGB(s, out, flashes = true) {
   m = smooth(0.78, 1, t);
   r += (EMBER[0] - r) * m; g += (EMBER[1] - g) * m; b += (EMBER[2] - b) * m;
   i = s.bright * (1 + 1.2 * (1 - smooth(0, 0.08, t))) * (1 - smooth(0.82, 1, t));
-  if (s.strobe > 0 && flashes) i *= ((s.age + s.phase) % s.strobe) < s.strobe * 0.35 ? 1 : 0.05;
+  if (s.target) i *= 0.88 + 0.12 * Math.sin(s.phase + s.age * 9);   // message letters: a subtle twinkle
+  else if (s.strobe > 0 && flashes) i *= ((s.age + s.phase) % s.strobe) < s.strobe * 0.35 ? 1 : 0.05;
   else if (s.glitter && flashes) i *= 0.55 + 0.9 * (0.5 + 0.5 * Math.sin(s.phase + s.age * 31)) ** 4;
   else i *= 0.9 + 0.1 * Math.sin(s.phase + s.age * 23);
   out[0] = r; out[1] = g; out[2] = b; out[3] = i; return out;

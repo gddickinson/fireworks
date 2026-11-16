@@ -124,7 +124,7 @@ export class RealView {
     const amb = S.name === 'Cityscape' ? [0.018, 0.012, 0.01] : [0.006, 0.007, 0.011];
     return { parts: this.parts, n, puffs: this.atmos.screenPuffs(cam, amb), lights,
       flash: this.reduced ? 0 : Math.min(3, this.atmos.flash), time: t, persist: this.reduced ? 0.55 : 0.8,
-      exposure: this.expo, bloom: 0.75, grain: this.capturing ? 0 : 0.022, weather };  // no grain in exports (GIFs compress)
+      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather };  // no grain in exports (GIFs compress)
   }
   draw() { this.R.render(this.frameData()); this.lastN = this.parts && this.sim.stars.length; }
   adapt(ms) {                                                 // keep ~60 fps: drop resolution, then particles

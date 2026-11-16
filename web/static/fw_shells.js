@@ -125,13 +125,13 @@ function message(sim, s, rec) {
     const [u, v] = p, a = R.uniform(0, 2 * Math.PI), e = R.uniform(-1, 1), sp = R.uniform(18, 34), r = Math.sqrt(1 - e * e);
     const col = [p[2], p[3], p[4]];
     const st = new Star('star', s.x, s.y, s.z, r * Math.cos(a) * sp + u * 0.8, e * sp + v * 0.8, r * Math.sin(a) * sp,
-      0.06, 0, col, 1, 0.9);
+      0.06, 0, col, 0.9, 0.5);
     st.target = [s.x + u, s.y + v];
     st.glide = R.uniform(0.25, 0.45);
     st.hold = st.glide + 1.1 + hold;
     st.life = st.hold + R.uniform(1.4, 2.0);
-    st.nograv = true; st.glitter = true; st.phase = i * 0.37;
-    st.trail = 3 * sim.quality; st.trail_color = col; st.trail_life = 0.5;
+    st.nograv = true; st.phase = i * 0.37;
+    st.trail = 0.8 * sim.quality; st.trail_color = col; st.trail_life = 0.35;
     sim.add(st);
   });
 }
