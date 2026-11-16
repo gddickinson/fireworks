@@ -15,8 +15,9 @@ from models.director import Director
 from models.pyro import DT, FOCAL, Sim
 from models.shell_types import TYPES
 
-HORIZON = 0.9          # fraction of the view height above the launch line
-BEACH_HORIZON = 0.7    # BeachBackground's waterline: shells rise from the water and are mirrored in it
+HORIZON = 0.9          # classic scenery: fraction of the view height above the launch line (realistic
+                       # scenery: effects/scenery.SCENERY_HORIZON)
+BEACH_HORIZON = 0.7    # classic scenery: BeachBackground's waterline: shells rise from the water and are mirrored in it
 QUALITY = 0.5
 BUDGET = 4000
 
@@ -57,6 +58,10 @@ class RealShow:
     def set_shell_type(self, name: str) -> None:
         """'mixed' or one of models.shell_types.TYPES (labels are mapped by the caller)."""
         self.director.shell_type = name if name in TYPES else "mixed"
+
+    def set_lift_time(self, seconds) -> None:
+        """Sim.lift_time: seconds from launch to burst at most (None: real time, about 4.5 s for a high shell)."""
+        self.sim.lift_time = None if seconds is None else float(seconds)
 
     def set_view(self, aspect: float, horizon: float) -> None:
         self.sim.aspect = aspect

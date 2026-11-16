@@ -23,6 +23,8 @@ class ControlPanel(QWidget):
 
     # Show signals (realistic renderer)
     renderer_changed = pyqtSignal(str)
+    scenery_changed = pyqtSignal(str)
+    lift_time_changed = pyqtSignal(float)       # seconds; ui_specs.LIFT_REAL_TIME means real time
     shell_type_changed = pyqtSignal(str)
     finale_requested = pyqtSignal()
     message_requested = pyqtSignal(str)
@@ -324,6 +326,22 @@ class ControlPanel(QWidget):
         self.renderer_combo.addItems(U.RENDERERS)
         self.renderer_combo.currentTextChanged.connect(self.renderer_changed.emit)
 
+        self.scenery_combo = QComboBox()
+        self.scenery_combo.addItems(U.SCENERIES)
+        self.scenery_combo.setToolTip("Realistic: painted night scenes with lit terrain and reflections; "
+                                      "Classic: the original backgrounds")
+        self.scenery_combo.currentTextChanged.connect(self.scenery_changed.emit)
+
+        spec = U.LIFT_TIME
+        self.lift_slider = QSlider(Qt.Orientation.Horizontal)
+        self.lift_slider.setRange(spec.lo, spec.hi)
+        self.lift_slider.setValue(spec.default)
+        self.lift_slider.setToolTip("A real high shell climbs for about 4.5 s; shorter lift times play the same "
+                                    "climb faster. 5 s = real time.")
+        self.lift_label = QLabel()
+        self.lift_slider.valueChanged.connect(self._lift_changed)
+        self._lift_changed(spec.default, emit=False)
+
         self.shell_combo = QComboBox()
         self.shell_combo.addItems(U.SHELL_TYPES)
         self.shell_combo.currentTextChanged.connect(self.shell_type_changed.emit)
@@ -343,6 +361,10 @@ class ControlPanel(QWidget):
 
         layout.addWidget(QLabel("Renderer:"))
         layout.addWidget(self.renderer_combo)
+        layout.addWidget(QLabel("Scenery:"))
+        layout.addWidget(self.scenery_combo)
+        layout.addWidget(self.lift_label)
+        layout.addWidget(self.lift_slider)
         layout.addWidget(QLabel("Shell type:"))
         layout.addWidget(self.shell_combo)
         layout.addWidget(self.finale_button)
@@ -354,8 +376,18 @@ class ControlPanel(QWidget):
     def _update_show_controls(self, renderer: str):
         """Shell type, finale and messages exist only in the realistic renderer"""
         real = renderer == "Realistic"
-        for w in (self.shell_combo, self.finale_button, self.message_input, self.message_button):
+        for w in (self.scenery_combo, self.lift_slider, self.shell_combo, self.finale_button, self.message_input,
+                  self.message_button):
             w.setEnabled(real)
+
+    def lift_time(self) -> float:
+        return self.lift_slider.value() * U.LIFT_TIME.scale
+
+    def _lift_changed(self, value: int, emit: bool = True):
+        sec = value * U.LIFT_TIME.scale
+        self.lift_label.setText("Lift time: " + ("real time" if sec >= U.LIFT_REAL_TIME else f"{sec:.1f} s"))
+        if emit:
+            self.lift_time_changed.emit(sec)
 
     def show_color_dialog(self):
         """Show color picker dialog and emit selected color"""
@@ -384,6 +416,8 @@ class ControlPanel(QWidget):
             'auto_launch': self.auto_launch.isChecked(),
             'random_colors': self.random_color.isChecked(),
             'renderer': self.renderer_combo.currentText(),
+            'scenery': self.scenery_combo.currentText(),
+            'lift_time': self.lift_time(),
             'shell_type': self.shell_combo.currentText()
         }
 
@@ -399,4 +433,6 @@ class ControlPanel(QWidget):
         self.random_color.setChecked(False)
         self.color_button.setStyleSheet("")
         self.renderer_combo.setCurrentText(U.RENDERERS[0])
+        self.scenery_combo.setCurrentText(U.SCENERIES[0])
+        self.lift_slider.setValue(U.LIFT_TIME.default)
         self.shell_combo.setCurrentText(U.SHELL_TYPES[0])

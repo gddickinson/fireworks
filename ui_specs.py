@@ -12,6 +12,7 @@ PATTERNS = ["Random", "Circle", "Heart", "Star", "Spiral", "Double Ring", "Text"
 BACKGROUNDS = ["Night Sky", "Cityscape", "Mountains", "Beach", "Forest"]
 WEATHER = ["None", "Rain", "Snow", "Fog", "Lightning"]
 RENDERERS = ["Realistic", "Classic"]    # desktop: gui/real_painter.py (3-D shells) or the original particle model
+SCENERIES = ["Realistic", "Classic"]    # desktop realistic renderer: effects/scenery.py or effects/backgrounds.py
 SHELL_TYPES = ["Mixed"] + [LABELS[t] for t in TYPES]   # realistic mode; "Mixed" draws a type per shell
 
 
@@ -33,6 +34,11 @@ STAR_POINTS = SliderSpec("star_points", "Points", 3, 12, 5)
 SPIRAL_ARMS = SliderSpec("spiral_arms", "Arms", 1, 8, 3)
 GRAVITY = SliderSpec("gravity", "Gravity", 0, 100, int(FireworkConfig.GRAVITY * 100), 0.01)
 LAUNCH_SPEED = SliderSpec("launch_speed", "Launch Speed", 50, 200, round(DEFAULT_LAUNCH_SPEED * 10), 0.1)
+
+# Desktop realistic renderer (not in SLIDERS, which the web panel builds): seconds from launch to burst at most,
+# 1.5-5 s in 0.5 s steps; the top value means real time (models.pyro.Sim.lift_time = None, about 4.5 s).
+LIFT_TIME = SliderSpec("lift_time", "Lift time", 3, 10, 6, 0.5)
+LIFT_REAL_TIME = LIFT_TIME.hi * LIFT_TIME.scale
 
 SLIDERS = [PARTICLE_COUNT, PATTERN_SCALE, PATTERN_ROTATION, STAR_POINTS, SPIRAL_ARMS, GRAVITY, LAUNCH_SPEED]
 

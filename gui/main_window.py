@@ -7,6 +7,7 @@ from config import DisplayConfig
 from gui.canvas import FireworksCanvas
 from gui.controls import ControlPanel
 from gui import export
+from ui_specs import LIFT_TIME
 
 class DetachableTabWidget(QTabWidget):
     def __init__(self, parent=None):
@@ -267,6 +268,8 @@ class FireworksApp(QMainWindow):
 
         # Show controls (realistic renderer)
         self.controls.renderer_changed.connect(self.canvas.set_renderer)
+        self.controls.scenery_changed.connect(self.canvas.set_scenery_mode)
+        self.controls.lift_time_changed.connect(self.canvas.set_lift_time)
         self.controls.shell_type_changed.connect(self.canvas.set_shell_type)
         self.controls.finale_requested.connect(self.canvas.start_finale)
         self.controls.message_requested.connect(self.show_message)
@@ -290,6 +293,8 @@ class FireworksApp(QMainWindow):
         self.canvas.set_launch_speed(values['launch_speed'])
         self.canvas.set_auto_launch(values['auto_launch'])
         self.canvas.set_shell_type(values['shell_type'])
+        self.canvas.set_scenery_mode(values['scenery'])
+        self.canvas.set_lift_time(values['lift_time'])
         self.canvas.set_renderer(values['renderer'])
 
     def save_settings(self):
@@ -335,9 +340,14 @@ class FireworksApp(QMainWindow):
                 self.settings.value('auto_launch', type=bool))
 
         for key, combo in (('renderer', self.controls.renderer_combo),
+                           ('scenery', self.controls.scenery_combo),
                            ('shell_type', self.controls.shell_combo)):
             if self.settings.contains(key):
                 combo.setCurrentText(self.settings.value(key))
+
+        if self.settings.contains('lift_time'):
+            self.controls.lift_slider.setValue(
+                round(float(self.settings.value('lift_time')) / LIFT_TIME.scale))
 
         if self.settings.contains('random_colors'):
             self.controls.random_color.setChecked(
