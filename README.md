@@ -7,6 +7,13 @@ A PyQt6-based interactive fireworks simulation application featuring realistic p
 ## Features
 
 ### Firework Effects
+- Two renderers (Renderer box in the control panel): **Realistic** (default) and **Classic**
+  - Realistic: 3-D shells and stars in metres under gravity and quadratic air drag (`models/pyro.py`), 11 shell types
+    (`models/shell_types.py`), a Shell type choice, a choreographed finale (Start finale) and text messages written
+    in stars (`models/director.py`, `gui/text_points.py`), drawn with additive glows, exposure trails, bloom and burst
+    light (`gui/real_painter.py`)
+  - Classic: the original particle model below
+- File menu: Save frame as PNG; Export GIF (5 s, needs `pip install Pillow`)
 - Realistic particle physics simulation
 - Customizable particle count and colors
 - Explosion pattern shapes (`models/patterns.py`), selectable in the control panel:
@@ -74,17 +81,35 @@ python main.py
 ## Web version
 
 The display also runs in the browser: **https://gddickinson.github.io/fireworks/** (GitHub Pages, published from
-`main` by `.github/workflows/pages.yml`). It is a JavaScript port of the models (rockets, particles, patterns,
-weather, scenes) with the same controls, checked number for number against seeded runs of the Python code.
+`main` by `.github/workflows/pages.yml`).
+
+![A message written in fireworks (GIF exported by the web app)](docs/img/message.gif)
+
+**Realistic display (default).** Shells and stars move in 3-D metres under gravity and quadratic air drag
+(`models/pyro.py`), burst at the top of their climb into one of 11 shell types (peony, chrysanthemum, willow, kamuro,
+palm, crossette, ring, horsetail, crackle, strobe, multi-break; plus salutes in the finale; `models/shell_types.py`), with a random show,
+a choreographed ~40 s finale and message shows (`models/director.py`). Stars flash white-hot, burn in the colours of
+real emitters and cool to embers; tails throw sparks, crossettes split, crackles pop. The JavaScript copy
+(`web/static/fw_pyro.js`, `fw_shells.js`, `fw_director.js`) is checked against seeded Python runs. The browser draws it
+with WebGL2 (HDR stars, exposure trails, bloom, burst light on the scene and the sky, smoke lit by the bursts,
+rippled reflections on water, tone mapping, vignette, grain; a 2D-canvas fallback without WebGL) over scenery painted
+from seeded noise: night skies with airglow and light pollution, star fields and the Milky Way, fractal ridgelines in
+haze, a harbour skyline, a lake, the sea, forests. Resolution and particle count adapt to keep 60 fps on phones.
+Optional synthesised sound with the delay of the sound's travel. **Classic display**: the JavaScript port of the
+desktop app's original models, checked number for number.
+
+**Messages**: words in the sky in any font and script the browser has (several messages in a row, colours per
+letter, gradient or rainbow, hold time), shareable as a link. **Export & share**: PNG/WebP, animated GIF (own
+encoder in a Web Worker, frame differencing) and MP4/WebM video (MediaRecorder), all in the browser.
 
 | | |
 |---|---|
-| ![Home](docs/img/home.png) | ![Display: beach, fog, heart pattern](docs/img/show_beach_heart.png) |
-| ![Display: mountains, lightning, star pattern](docs/img/show_mountains_star.png) | ![Python vs JavaScript](docs/img/verify.png) |
+| ![Display: harbour city, realistic renderer](docs/img/show.png) | ![Messages page](docs/img/messages.png) |
+| ![Display: mountains and lake at night](docs/img/show_mountains.png) | ![Python vs JavaScript](docs/img/verify.png) |
 
-Pages: **Display** (the simulator; click the sky to launch, L launch, Space pause, T controls, F fullscreen,
-R reset, S save settings), **Patterns** (each shape from `models/patterns.py`, Python and JS points overlaid),
-**Python vs JS** (seeded reference runs replayed in the browser), **About**.
+Pages: **Display** (click the sky to launch, L launch, G finale, Space pause, T controls, F fullscreen, R reset,
+S save settings), **Messages**, **Patterns** (each shape from `models/patterns.py`, Python and JS points overlaid),
+**Python vs JS** (seeded reference runs of both engines replayed in the browser), **About**.
 
 ### Run the web app
 ```bash

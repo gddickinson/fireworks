@@ -3,7 +3,7 @@ import { route, api, app, list, esc, onLeave } from './core.js';
 import { RealView, reducedMotion } from './real_view.js';
 
 const DOORS = [
-  ['#/show', 'The display', 'A realistic show: 3-D shells with air drag, twelve shell types from peonies to willows and crossettes, lit smoke, reflections, optional sound and a choreographed finale, over five scenes with four weather effects. Click the sky to launch.', 'a'],
+  ['#/show', 'The display', 'A realistic show: 3-D shells with air drag, eleven shell types (plus finale salutes) from peonies to willows and crossettes, lit smoke, reflections, optional sound and a choreographed finale, over five scenes with four weather effects. Click the sky to launch.', 'a'],
   ['#/messages', 'Messages in the sky', 'Write a greeting in fireworks (any language, several messages in a row), then share it as a link, a GIF or a video.', 'b'],
   ['#/patterns', 'Explosion patterns', 'The shapes defined in models/patterns.py (circle, heart, star, spiral, double ring, random, text), computed by Python and JavaScript side by side.', 'b'],
   ['#/verify', 'Python vs JavaScript', 'Seeded runs of the Python models (realistic and classic fireworks, weather, scenes, colours) replayed by the browser, with the differences measured.', 'c'],
