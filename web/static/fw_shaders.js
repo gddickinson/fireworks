@@ -74,14 +74,14 @@ vec3 lightAt(vec2 px) {
     if (i >= nL) break;
     vec2 d = (px - L[i].xy) / L[i].z; float q = 1.0 + dot(d, d); s += LC[i] * L[i].w / (q * q);
   }
-  return s;
+  return s / (1.0 + dot(s, vec3(0.3, 0.5, 0.2)) * 0.6);         // soft limit: many bursts do not wash the scene out
 }
 void main() {
   vec2 px = uv * res;
   vec4 m = texture(mat, uv);
   vec3 lt = lightAt(px);
   vec3 col = lin(texture(back, uv).rgb);
-  col += lt * (m.r * 0.16 + m.b * sky * 0.018 + m.g * 0.02) + vec3(0.6, 0.65, 0.8) * flash * 0.004 * m.b;
+  col += lt * (m.r * 0.16 + m.b * sky * 0.018 + m.g * 0.02) + vec3(0.6, 0.65, 0.8) * min(flash, 1.5) * 0.004 * m.b;
   vec3 f = rt(fw, uv);
   if (m.g > 0.5 && uv.y > wl) {                                       // reflections on water
     float d = uv.y - wl;

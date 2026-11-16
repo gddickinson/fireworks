@@ -43,3 +43,14 @@ input[type=color] { height:34px; padding:2px; margin-top:4px; }
   .home-hero { grid-template-columns:1fr; } .hero-sky { height:300px; }
 }
 main ul { max-width:84ch; }
+
+/* realistic display: export panel, messages page */
+.xh { margin:12px 0 4px; font:600 12px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--accent3); }
+.xrow { display:flex; flex-wrap:wrap; gap:8px; } .xrow label { flex:1 1 90px; }
+progress { width:100%; height:10px; accent-color:var(--accent); }
+.show-stage .btn { margin:0; }
+.msg-page { display:grid; grid-template-columns:minmax(260px, 1fr) 360px; gap:20px; align-items:start; }
+.msg-page textarea { width:100%; min-height:110px; font:15px var(--sans, system-ui); }
+.presets { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; } .presets button { margin:0; padding:6px 10px; font-size:13px; }
+@media (max-width:900px) { .msg-page { grid-template-columns:1fr; } }
+[hidden] { display:none !important; }

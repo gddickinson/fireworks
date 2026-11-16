@@ -118,10 +118,12 @@ export class RealView {
       const c = this.wxCanvas.getContext('2d'); c.clearRect(0, 0, this.wxCanvas.width, this.wxCanvas.height);
       this.wx.draw(c); weather = this.wxCanvas;
     }
+    const lights = this.atmos.screenLights(cam, 8), total = lights.reduce((a, L) => a + L.I, 0);
+    this.expo = (this.expo ?? 1) * 0.9 + 0.1 / (1 + 0.06 * total);   // eye/camera adapting to a bright finale
     const amb = S.name === 'Cityscape' ? [0.018, 0.012, 0.01] : [0.006, 0.007, 0.011];
-    return { parts: this.parts, n, puffs: this.atmos.screenPuffs(cam, amb), lights: this.atmos.screenLights(cam, 8),
+    return { parts: this.parts, n, puffs: this.atmos.screenPuffs(cam, amb), lights,
       flash: this.reduced ? 0 : Math.min(3, this.atmos.flash), time: t, persist: this.reduced ? 0.55 : 0.8,
-      exposure: 1.0, bloom: 0.9, grain: 0.022, weather };
+      exposure: this.expo, bloom: 0.75, grain: this.capturing ? 0 : 0.022, weather };  // no grain in exports (GIFs compress)
   }
   draw() { this.R.render(this.frameData()); this.lastN = this.parts && this.sim.stars.length; }
   adapt(ms) {                                                 // keep ~60 fps: drop resolution, then particles
@@ -138,7 +140,7 @@ export class RealView {
   }
   stats() {
     return { renderer: this.R.kind, scale: +this.scale.toFixed(2), quality: +this.quality.toFixed(2),
-      stars: this.sim.stars.length, frameMs: +(this.ema || 0).toFixed(1) };
+      stars: this.sim.stars.length, frameMs: +(this.ema || 0).toFixed(1), workMs: +(this.work || 0).toFixed(2) };
   }
   start() {
     let last = performance.now(), acc = 0;
@@ -148,8 +150,11 @@ export class RealView {
       if (this.paused || document.hidden) return;
       acc = Math.min(acc + dt, FRAME_MS * 4);
       let n = 0;
+      const w0 = performance.now();
       while (acc >= FRAME_MS) { this.step(); acc -= FRAME_MS; n++; }
       if (n) { this.draw(); this.opts.onFrame?.(this); }
+      const work = performance.now() - w0;                    // CPU time of simulation + draw calls this frame
+      this.work = this.work ? this.work * 0.95 + work * 0.05 : work;
       this.adapt(dt);
       window.__fwStats = this.stats();
     });

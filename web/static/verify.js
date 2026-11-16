@@ -3,6 +3,7 @@
 import { route, api, app, esc, list } from './core.js';
 import { backgroundScenes, maxDiff, randomColors, runShow, weatherRuns } from './fw_reference.js';
 import { rgbCss } from './fw_color.js';
+import { runPyro } from './fw_reference_pyro.js';
 
 const verdict = (d, tol = 1e-9) => `<b class="${d < tol ? 'ok' : 'err'}">${d === 0 ? '0 (identical)' : d.toExponential(2)}</b>`;
 const row = (what, detail, d) => `<tr><th>${what}</th><td>${detail}</td><td>${verdict(d)}</td></tr>`;
@@ -11,10 +12,18 @@ route('verify', async () => {
   const [cases, D] = await Promise.all([api('/reference'), api('/defaults')]);
   app().innerHTML = `
   <h1 class="glow">Python vs JavaScript</h1>
-  <p class="lead">The web display runs a JavaScript port of the desktop app's models. To check it, the Python code is
+  <p class="lead">The web display runs JavaScript copies of the Python models: the realistic engine (default) and the classic port of the desktop app's models. To check them, the Python code is
   run with a seeded random stream (mulberry32, a copy of the browser's generator stands in for Python's
   <code>random</code> module) and the browser replays the same runs here. Differences are relative, per number.</p>
-  <section class="panel"><h2>Firework shows</h2>
+  <section class="panel"><h2>Realistic engine (the default display)</h2>
+  <p class="small mute">The realistic display's physics, shell types and launch programme (<code>models/pyro.py</code>,
+  <code>shell_types.py</code>, <code>director.py</code>) also exist in Python, and the browser copy replays seeded
+  Python runs here: per kind of object (shells, stars, sparks, crackle pops, sub-shells) the count and the sums of
+  positions and velocities every one or two seconds, and the numbers of launches, bursts and crackles. The Python
+  runs take several seconds, so they come from the committed fixture (a test checks it matches a fresh run). What
+  is drawn on top (light, smoke, bloom, scenery, sound) is rendering only and not part of this check.</p>
+  <div class="scroll"><table><thead><tr><th>Run</th><th>Setup</th><th>max |JS − Python|</th></tr></thead><tbody id="pyro"></tbody></table></div></section>
+  <section class="panel"><h2>Classic firework shows (desktop app model)</h2>
   <p class="small mute">The <code>FireworksCanvas.update_animation</code> loop with the real <code>Firework</code> and
   <code>Particle</code> classes: spawn chance ${Math.round(D.firework.SPAWN_RATE * 100)}% per frame, rockets at random x, burst at the apex. Snapshots compare
   every firework's position and velocity and the sums of its particles' positions and velocities.</p>
@@ -33,6 +42,14 @@ route('verify', async () => {
     shows.insertAdjacentHTML('beforeend', row(`"${esc(k.name)}"`, `seed ${k.seed} · ${k.width}×${k.height} · ${k.particles}
       particles per rocket${k.pattern ? ` · ${k.pattern} pattern` : ''}${k.random_each ? ' · random pattern per rocket' : ''}${k.gravity !== undefined ? ` · gravity ${k.gravity}, launch speed ${k.launch_speed}` : ""} · ${k.steps} frames, ${ref.snapshots.length} snapshots · ${last.length} fireworks and ${parts}
       particles at the end · JS ${ms.toFixed(0)} ms`, maxDiff(ref.snapshots, js.snapshots)));
+  }
+  const pyro = document.getElementById('pyro');
+  for (const ref of await api('/reference/pyro')) {
+    const c = ref.case, t0 = performance.now(), js = runPyro(c), ms = performance.now() - t0, last = ref.snapshots.at(-1);
+    const objs = Object.entries(last.kinds).map(([k, v]) => `${v.n} ${k}`).join(', ');
+    pyro.insertAdjacentHTML('beforeend', row(`"${esc(c.name)}"`, `seed ${c.seed} · ${c.mode} · ${c.seconds} s
+      (${ref.snapshots.length} snapshots) · ${last.events.launch} launches, ${last.events.burst} bursts,
+      ${last.events.crackle} crackles · at the end: ${esc(objs) || 'nothing'} · JS ${ms.toFixed(0)} ms`, maxDiff(ref.snapshots, js.snapshots)));
   }
   let q;
   try { q = await api('/reference/scenes'); } catch (e) {

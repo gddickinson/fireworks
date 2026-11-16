@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 
 import config  # noqa: E402
 import ui_specs as U  # noqa: E402
+from models.shell_types import TYPES as SHELL_TYPES  # noqa: E402
 from web.reference import SHOW_BY_NAME, SHOW_CASES, pattern_points, run_show  # noqa: E402
 
 STATIC = Path(__file__).resolve().parent / "static"
@@ -60,6 +61,7 @@ def info():
         "patterns": len(U.PATTERNS), "backgrounds": len(U.BACKGROUNDS),
         "weather": len([w for w in U.WEATHER if w != "None"]), "sliders": len(U.SLIDERS),
         "max_particles": config.FireworkConfig.MAX_PARTICLES, "frame_rate": config.FireworkConfig.FRAME_RATE,
+        "shell_types": len(SHELL_TYPES),
     }
 
 
@@ -98,6 +100,14 @@ def reference_scenes():
     return data["qt"]
 
 
+@app.get("/api/reference/pyro")
+def reference_pyro():
+    """Seeded runs of the realistic engine (models/pyro.py, shell_types.py, director.py; web/reference_pyro.py).
+    A full set takes several seconds of Python, so they are read from the committed fixture (tests/test_web.py
+    checks that the fixture matches a fresh run)."""
+    return json.loads(FIXTURE.read_text())["pyro"]
+
+
 @app.get("/api/reference/{name}")
 def reference(name: str):
     """A seeded run of the real Firework/Particle models in the canvas loop, snapshots every few frames."""
@@ -107,5 +117,5 @@ def reference(name: str):
 
 
 # GET paths (without the /api prefix) written to the static site as api/<path>.json.
-STATIC_ENDPOINTS = ["/info", "/defaults", "/patterns", "/reference", "/reference/scenes"] + [
+STATIC_ENDPOINTS = ["/info", "/defaults", "/patterns", "/reference", "/reference/scenes", "/reference/pyro"] + [
     f"/reference/{c['name']}" for c in SHOW_CASES]
