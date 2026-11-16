@@ -14,7 +14,8 @@ route('about', async () => {
   and checked against seeded Python runs (<a href="#/verify">Python vs JS</a>):</p>
   <ul>
     <li><b>Physics in metres and seconds</b>: shells are fired from 300 to 600 m away with the speed that reaches the
-      chosen height against gravity (9.81 m/s²) and quadratic air drag; they burst at the top. Every star then feels
+      chosen height against gravity (9.81 m/s²) and quadratic air drag, following the exact solution of that climb,
+      and burst at the top. A 150 m climb takes about 4.5 s; the Lift time setting (default 3 s) plays it faster. Every star then feels
       drag a = −k|v − wind|(v − wind): it leaves at 30 to 70 m/s, slows within a second or two towards its terminal
       speed √(g/k) and droops. A pinhole camera projects the 3-D positions, so distant shells look smaller and dimmer.</li>
     <li><b>${info.shell_types} shell types</b>: peony, chrysanthemum (spark tails), willow, kamuro (glittering gold crown),

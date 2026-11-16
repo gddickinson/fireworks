@@ -11,7 +11,8 @@ A PyQt6-based interactive fireworks simulation application featuring realistic p
   - Realistic: 3-D shells and stars in metres under gravity and quadratic air drag (`models/pyro.py`), 11 shell types
     (`models/shell_types.py`), a Shell type choice, a choreographed finale (Start finale) and text messages written
     in stars (`models/director.py`, `gui/text_points.py`), drawn with additive glows, exposure trails, bloom and burst
-    light (`gui/real_painter.py`)
+    light (`gui/real_painter.py`) over realistic scenery (`effects/scenery*.py`, the same seeded scenes as the web;
+    Scenery: Realistic / Classic), with a Lift time control (default 3 s; 5 = real time, about 4.5 s for 150 m)
   - Classic: the original particle model below
 - File menu: Save frame as PNG; Export GIF (5 s, needs `pip install Pillow`)
 - Realistic particle physics simulation
@@ -94,7 +95,8 @@ real emitters and cool to embers; tails throw sparks, crossettes split, crackles
 with WebGL2 (HDR stars, exposure trails, bloom, burst light on the scene and the sky, smoke lit by the bursts,
 rippled reflections on water, tone mapping, vignette, grain; a 2D-canvas fallback without WebGL) over scenery painted
 from seeded noise: night skies with airglow and light pollution, star fields and the Milky Way, fractal ridgelines in
-haze, a harbour skyline, a lake, the sea, forests. Resolution and particle count adapt to keep 60 fps on phones.
+haze, a harbour skyline, a lake, the sea, forests. Lift time (default 3 s) plays each shell's climb faster than the
+real ~4.5 s so the show keeps moving. Resolution and particle count adapt to keep 60 fps on phones.
 Optional synthesised sound with the delay of the sound's travel. **Classic display**: the JavaScript port of the
 desktop app's original models, checked number for number.
 

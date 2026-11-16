@@ -58,3 +58,17 @@
 - Checks: pytest 101 passed; node 11+10+11+4+7; screenshots --static (10 routes) and --base (6 routes) all ok,
   phone 0 px (also show/messages at 390 px). Frame time: 16.7 ms median (vsync-bound), JS work 0.5-0.8 ms/frame
   WebGL, 2 ms Canvas2D, at up to 12.5k stars (headless Chrome, M1 Max).
+
+## 2026-11-16 (later) -- Review fixes from the lead (branch `web-interface`)
+- Square sprites: WebGL star halo now falls to exactly 0 at the sprite circle (bright stars accumulating in the
+  trail buffer showed square edges); the 2D fallback draws cached radial sprites (was fillRect) and blurs its glow.
+- Snow caps: one polygon per snowy stretch, noise-shaped lower edge, slope shading by a smooth horizontal gradient,
+  downward fade, lit by bursts (was per-column rects: barcode stripes).
+- Messages: fixed Repeat relaunching the message every second while the shell climbed (overlapping copies were the
+  blur); 2x denser dots, letter spacing, smaller/dimmer letter stars, subtle twinkle, less bloom on that page.
+- Lift time (default 3 s): shells follow the exact closed-form drag climb, played faster; `Sim.lift_time`
+  (None = real time). Fixture regenerated (+ `physical_lift` run); web slider and desktop control.
+- Desktop scenery: `effects/scenery_noise.py`, `scenery_parts.py`, `scenery.py` port the web scenes (numpy noise
+  matches fw_noise.js to 13 decimals); Scenery Realistic/Classic option; tests/test_scenery.py.
+- Checks: pytest 114 passed (+12 subtests); node 11+11+11+4+7; screenshots --static 10 routes and --base 6 routes ok,
+  phone 0 px; George's plist sha1 unchanged.
