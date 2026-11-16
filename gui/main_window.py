@@ -6,6 +6,7 @@ from PyQt6.QtGui import QAction, QKeySequence, QColor, QCloseEvent
 from config import DisplayConfig
 from gui.canvas import FireworksCanvas
 from gui.controls import ControlPanel
+from gui import export
 
 class DetachableTabWidget(QTabWidget):
     def __init__(self, parent=None):
@@ -181,6 +182,16 @@ class FireworksApp(QMainWindow):
 
         file_menu.addSeparator()
 
+        # Image export (gui/export.py; the GIF needs Pillow)
+        png_action = QAction('Save Frame as PNG...', self)
+        png_action.triggered.connect(lambda: export.save_frame_dialog(self, self.canvas))
+        file_menu.addAction(png_action)
+        gif_action = QAction('Export GIF...', self)
+        gif_action.triggered.connect(lambda: export.export_gif_dialog(self, self.canvas))
+        file_menu.addAction(gif_action)
+
+        file_menu.addSeparator()
+
         # Exit action
         exit_action = QAction('Exit', self)
         exit_action.setShortcut('Ctrl+Q')
@@ -254,6 +265,17 @@ class FireworksApp(QMainWindow):
         self.controls.launch_button.clicked.connect(
             self.canvas.manual_launch)
 
+        # Show controls (realistic renderer)
+        self.controls.renderer_changed.connect(self.canvas.set_renderer)
+        self.controls.shell_type_changed.connect(self.canvas.set_shell_type)
+        self.controls.finale_requested.connect(self.canvas.start_finale)
+        self.controls.message_requested.connect(self.show_message)
+
+    def show_message(self, text: str):
+        """Spell a message with message shells (realistic renderer)"""
+        if not self.canvas.show_message(text):
+            self.statusBar().showMessage('Type a message first', 3000)
+
 
 
     def apply_controls_to_canvas(self):
@@ -267,6 +289,8 @@ class FireworksApp(QMainWindow):
         self.canvas.set_gravity(values['gravity'])
         self.canvas.set_launch_speed(values['launch_speed'])
         self.canvas.set_auto_launch(values['auto_launch'])
+        self.canvas.set_shell_type(values['shell_type'])
+        self.canvas.set_renderer(values['renderer'])
 
     def save_settings(self):
         """Save current settings to QSettings"""
@@ -309,6 +333,11 @@ class FireworksApp(QMainWindow):
         if self.settings.contains('auto_launch'):
             self.controls.auto_launch.setChecked(
                 self.settings.value('auto_launch', type=bool))
+
+        for key, combo in (('renderer', self.controls.renderer_combo),
+                           ('shell_type', self.controls.shell_combo)):
+            if self.settings.contains(key):
+                combo.setCurrentText(self.settings.value(key))
 
         if self.settings.contains('random_colors'):
             self.controls.random_color.setChecked(

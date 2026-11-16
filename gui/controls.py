@@ -21,6 +21,12 @@ class ControlPanel(QWidget):
     text_pattern_changed = pyqtSignal(str)
     random_colors_toggled = pyqtSignal(bool)
 
+    # Show signals (realistic renderer)
+    renderer_changed = pyqtSignal(str)
+    shell_type_changed = pyqtSignal(str)
+    finale_requested = pyqtSignal()
+    message_requested = pyqtSignal(str)
+
     # Pattern-specific signals
     pattern_option_signal = pyqtSignal(str, int)  # (option_name, value)
     pattern_scale_signal = pyqtSignal(float)
@@ -47,6 +53,7 @@ class ControlPanel(QWidget):
         bottom_controls.addWidget(self.create_physics_controls())
         bottom_controls.addWidget(self.create_background_controls())
         bottom_controls.addWidget(self.create_launch_controls())
+        bottom_controls.addWidget(self.create_show_controls())
 
         main_layout.addLayout(top_controls)
         main_layout.addLayout(bottom_controls)
@@ -308,6 +315,48 @@ class ControlPanel(QWidget):
         group.setLayout(layout)
         return group
 
+    def create_show_controls(self) -> QGroupBox:
+        """Renderer choice and the realistic show's shell type, finale and messages"""
+        group = QGroupBox("Show")
+        layout = QVBoxLayout()
+
+        self.renderer_combo = QComboBox()
+        self.renderer_combo.addItems(U.RENDERERS)
+        self.renderer_combo.currentTextChanged.connect(self.renderer_changed.emit)
+
+        self.shell_combo = QComboBox()
+        self.shell_combo.addItems(U.SHELL_TYPES)
+        self.shell_combo.currentTextChanged.connect(self.shell_type_changed.emit)
+
+        self.finale_button = QPushButton("Start finale")
+        self.finale_button.clicked.connect(self.finale_requested.emit)
+
+        self.message_input = QLineEdit()
+        self.message_input.setPlaceholderText("Message...")
+        self.message_button = QPushButton("Show message")
+        self.message_button.clicked.connect(
+            lambda: self.message_requested.emit(self.message_input.text()))
+        self.message_input.returnPressed.connect(self.message_button.click)
+
+        self.renderer_combo.currentTextChanged.connect(self._update_show_controls)
+        self._update_show_controls(self.renderer_combo.currentText())
+
+        layout.addWidget(QLabel("Renderer:"))
+        layout.addWidget(self.renderer_combo)
+        layout.addWidget(QLabel("Shell type:"))
+        layout.addWidget(self.shell_combo)
+        layout.addWidget(self.finale_button)
+        layout.addWidget(self.message_input)
+        layout.addWidget(self.message_button)
+        group.setLayout(layout)
+        return group
+
+    def _update_show_controls(self, renderer: str):
+        """Shell type, finale and messages exist only in the realistic renderer"""
+        real = renderer == "Realistic"
+        for w in (self.shell_combo, self.finale_button, self.message_input, self.message_button):
+            w.setEnabled(real)
+
     def show_color_dialog(self):
         """Show color picker dialog and emit selected color"""
         color = QColorDialog.getColor()
@@ -333,7 +382,9 @@ class ControlPanel(QWidget):
             'gravity': self.gravity_slider.value() / 100,
             'launch_speed': self.speed_slider.value() / 10,
             'auto_launch': self.auto_launch.isChecked(),
-            'random_colors': self.random_color.isChecked()
+            'random_colors': self.random_color.isChecked(),
+            'renderer': self.renderer_combo.currentText(),
+            'shell_type': self.shell_combo.currentText()
         }
 
     def reset_to_defaults(self):
@@ -347,3 +398,5 @@ class ControlPanel(QWidget):
         self.auto_launch.setChecked(True)
         self.random_color.setChecked(False)
         self.color_button.setStyleSheet("")
+        self.renderer_combo.setCurrentText(U.RENDERERS[0])
+        self.shell_combo.setCurrentText(U.SHELL_TYPES[0])

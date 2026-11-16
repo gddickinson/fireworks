@@ -1,15 +1,18 @@
 """Qt-free control specifications shared by the desktop control panel (gui/controls.py) and the web app (web/).
 
-The choice lists (patterns, backgrounds, weather) and the slider ranges/defaults/scales live here once, so the web
+The choice lists (patterns, backgrounds, weather, renderers, shell types) and the slider ranges/defaults/scales live here once, so the web
 version offers exactly the controls of the desktop app. A slider's real value is ``slider_value * scale``.
 """
 from dataclasses import asdict, dataclass
 
 from config import DEFAULT_LAUNCH_SPEED, FireworkConfig
+from models.shell_types import LABELS, TYPES
 
 PATTERNS = ["Random", "Circle", "Heart", "Star", "Spiral", "Double Ring", "Text"]
 BACKGROUNDS = ["Night Sky", "Cityscape", "Mountains", "Beach", "Forest"]
 WEATHER = ["None", "Rain", "Snow", "Fog", "Lightning"]
+RENDERERS = ["Realistic", "Classic"]    # desktop: gui/real_painter.py (3-D shells) or the original particle model
+SHELL_TYPES = ["Mixed"] + [LABELS[t] for t in TYPES]   # realistic mode; "Mixed" draws a type per shell
 
 
 @dataclass(frozen=True)

@@ -7,6 +7,7 @@ from config import DEFAULT_LAUNCH_SPEED, FireworkConfig, DisplayConfig
 from models.firework import Firework
 
 from utils.color import ColorUtils
+from gui.canvas_real import RealisticMixin
 
 from models.patterns import (
     Pattern, CirclePattern, HeartPattern, StarPattern,
@@ -31,7 +32,9 @@ from effects.backgrounds import (
     ForestBackground
 )
 
-class FireworksCanvas(QWidget):
+class FireworksCanvas(RealisticMixin, QWidget):
+    """The display: classic particle fireworks (default) or the realistic renderer (`set_renderer`, gui/canvas_real.py)."""
+
     def __init__(self):
         super().__init__()
 
@@ -75,6 +78,9 @@ class FireworksCanvas(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        if self.renderer == "Realistic":
+            self.paint_real(painter, self.width(), self.height())
+            return
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         # Draw background
@@ -101,6 +107,9 @@ class FireworksCanvas(QWidget):
 
     def update_animation(self):
         """Update fireworks animation"""
+        if self.renderer == "Realistic":
+            self._update_real()
+            return
         # Update existing fireworks (a rocket that never bursts, e.g. at zero gravity, is dropped once it is
         # a window height above the top)
         self.fireworks = [fw for fw in self.fireworks
@@ -158,6 +167,7 @@ class FireworksCanvas(QWidget):
 
     def set_pattern(self, pattern_name: str):
         """Set the explosion pattern based on pattern name"""
+        self.pattern_name = pattern_name
         if self.use_random_patterns:
             self.pattern = RandomPattern()
             return
@@ -277,6 +287,9 @@ class FireworksCanvas(QWidget):
 
     def manual_launch(self):
         """Manually launch a firework"""
+        if self.renderer == "Realistic":
+            self._real_launch()
+            return
         self.add_firework()
 
     def set_launch_speed(self, speed: float):
@@ -324,6 +337,7 @@ class FireworksCanvas(QWidget):
 
         # Clear existing fireworks
         self.fireworks.clear()
+        self.reset_real()
 
         # Ensure timer is running
         if not self.timer.isActive():
