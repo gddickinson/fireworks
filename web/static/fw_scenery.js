@@ -81,7 +81,7 @@ const PAINTERS = {
     specs.forEach((sp, i) => {
       const top = haze[i], bot = haze[i].map(v => v * 0.55);
       const r = range(c, m, W, H, seed + 10 + i, sp, top, bot, 0.5 - i * 0.1, wl);
-      if (i < 2) snow(c, m, r, H * (sp.base - sp.amp * 0.62), H * 0.05, seed + 20 + i);
+      if (i < 2) snow(c, m, r, H * (sp.base - sp.amp * 0.5), H * 0.06, seed + 20 + i);
     });
     treeLine(c, m, W, H, wl, seed + 30, H * 0.025, [8, 10, 14]);
     water(c, m, W, H, wl, seed + 5, { tint: [8, 12, 22], reflect: 0.6 });

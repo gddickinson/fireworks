@@ -42,25 +42,35 @@ function decodeGIF(b) {
   const table = f => { const sz = 3 << ((f & 7) + 1), t = b.subarray(p, p + sz); p += sz; return t; };
   if (flags & 0x80) gct = table(flags);
   const subBlocks = () => { const parts = []; while (b[p]) { parts.push(b.subarray(p + 1, p + 1 + b[p])); p += b[p] + 1; } p++; return parts; };
-  const frames = [];
+  const frames = [], canvas = new Uint8Array(width * height * 3);
   let gce = null;
   for (;;) {
     const t = b[p++];
     if (t === 0x3b) break;
     if (t === 0x21) {
       const label = b[p++], parts = subBlocks();
-      if (label === 0xf9) gce = { disposal: (parts[0][0] >> 2) & 7, delay: parts[0][1] | (parts[0][2] << 8) };
+      if (label === 0xf9) {
+        const g = parts[0];
+        gce = { disposal: (g[0] >> 2) & 7, delay: g[1] | (g[2] << 8), transparent: g[0] & 1 ? g[3] : -1 };
+      }
       if (label === 0xff && String.fromCharCode(...parts[0]) === 'NETSCAPE2.0') loop = parts[1][1] | (parts[1][2] << 8);
     } else if (t === 0x2c) {
-      const w = u16(p + 4), h = u16(p + 6), f = b[p + 8];
+      const left = u16(p), top = u16(p + 2), w = u16(p + 4), h = u16(p + 6), f = b[p + 8];
+      assert.ok(left + w <= width && top + h <= height, 'frame inside the logical screen');
       p += 9;
       const pal = f & 0x80 ? table(f) : gct, minCode = b[p++];
       const parts = subBlocks(), data = new Uint8Array(parts.reduce((s, x) => s + x.length, 0));
       parts.reduce((o, x) => (data.set(x, o), o + x.length), 0);
       assert.ok(parts.every(x => x.length <= 255));
-      const idx = lzwDecode(data, minCode, w * h), rgb = new Uint8Array(w * h * 3);
-      idx.forEach((v, i) => rgb.set(pal.subarray(v * 3, v * 3 + 3), i * 3));
-      frames.push({ w, h, idx, rgb, gce });
+      const idx = lzwDecode(data, minCode, w * h), tr = gce ? gce.transparent : -1;
+      // compose onto the canvas: apply the previous frame's disposal (1 = keep, 2 = clear its rect), then draw
+      // the non-transparent pixels of this frame at its offset; rgb is the composed picture after this frame
+      const last = frames[frames.length - 1];
+      if (last && last.gce && last.gce.disposal === 2) {
+        for (let y = 0; y < last.h; y++) canvas.fill(0, ((last.top + y) * width + last.left) * 3, ((last.top + y) * width + last.left + last.w) * 3);
+      }
+      idx.forEach((v, i) => { if (v !== tr) canvas.set(pal.subarray(v * 3, v * 3 + 3), ((top + (i / w | 0)) * width + left + i % w) * 3); });
+      frames.push({ left, top, w, h, idx, gce, rgb: canvas.slice() });
       gce = null;
     } else throw new Error(`unknown block 0x${t.toString(16)} at ${p - 1}`);
   }
@@ -75,6 +85,11 @@ const flatFrame = (w, h, fn) => {
   return a;
 };
 const rgbOf = rgba => Uint8Array.from({ length: rgba.length / 4 * 3 }, (_, i) => rgba[(i / 3 | 0) * 4 + i % 3]);
+const sameRGB = (a, b, msg) => {                                     // short failure message instead of a huge diff
+  assert.equal(a.length, b.length, msg);
+  const i = a.findIndex((v, k) => v !== b[k]);
+  assert.ok(i < 0, `${msg}: first difference at pixel ${(i / 3) | 0}: ${a.subarray(i - i % 3, i - i % 3 + 3)} vs ${b.subarray(i - i % 3, i - i % 3 + 3)}`);
+};
 let seed = 12345;
 const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32;
 
@@ -88,9 +103,37 @@ ok('round trip: 3 flat-colour frames decode to the same colours', () => {
   const d = decodeGIF(gif);
   assert.equal(d.width, W); assert.equal(d.height, H); assert.equal(d.frames.length, 3);
   d.frames.forEach((fr, i) => {
-    assert.deepEqual(fr.rgb, rgbOf(frames3[i]), `frame ${i}`);
-    assert.deepEqual(fr.gce, { disposal: 1, delay: 7 });
+    sameRGB(fr.rgb, rgbOf(frames3[i]), `frame ${i}`);
+    assert.equal(fr.gce.disposal, 1); assert.equal(fr.gce.delay, 7);
   });
+});
+
+ok('optimised animation: moving square over a static background composes back exactly, much smaller', () => {
+  const w = 96, h = 64, N = 12;
+  const bg = (x, y) => [(x * 5) & 255, (y * 3) & 255, ((x ^ y) * 7) & 255];   // static, many colours
+  const frames = Array.from({ length: N }, (_, f) => flatFrame(w, h, (x, y) => {
+    const sx = 4 + f * 6, sy = 10 + f * 3;
+    return x >= sx && x < sx + 10 && y >= sy && y < sy + 10 ? [255, 255, 255] : bg(x, y);
+  }));
+  frames.push(frames[N - 1]);                                         // an all-unchanged frame
+  const q = quantize(frames, 63);                                     // > 63 colours: a lossy (median-cut) palette
+  const enc = optimize => frames.reduce((g, f) => g.addFrame(f, { dither: false }),
+    new GifWriter(w, h, { palette: q, delayCs: 4, optimize })).finish();
+  const opt = enc(true), plain = enc(false), d = decodeGIF(opt), dp = decodeGIF(plain);
+  assert.equal(d.frames.length, N + 1);
+  d.frames.forEach((fr, i) => sameRGB(fr.rgb, dp.frames[i].rgb, `frame ${i} equals the unoptimised one`));
+  const f1 = d.frames[1];
+  assert.ok(f1.w < w && f1.h < h && f1.gce.transparent >= 0 && f1.gce.disposal === 1, 'cropped, transparent');
+  assert.ok(f1.idx.includes(f1.gce.transparent), 'unchanged pixels inside the crop are transparent');
+  const fl = d.frames[N];
+  assert.deepEqual([fl.w, fl.h, fl.idx[0], fl.gce.delay], [1, 1, fl.gce.transparent, 4], 'unchanged frame: 1x1 transparent');
+  assert.ok(opt.length * 4 < plain.length, `optimised ${opt.length} B vs ${plain.length} B`);
+  // exact round trip with few colours (exact palette path)
+  const few = Array.from({ length: 6 }, (_, f) => flatFrame(w, h, (x, y) => {
+    const sx = f * 9;
+    return x >= sx && x < sx + 8 && y >= 20 && y < 28 ? COLS[1 + f % 3] : COLS[(x >> 4) % 2 ? 4 : 0];
+  }));
+  decodeGIF(encodeGIF(few, w, h, { dither: false })).frames.forEach((fr, i) => sameRGB(fr.rgb, rgbOf(few[i]), `few ${i}`));
 });
 
 ok('header, logical screen, NETSCAPE loop extension and trailer bytes', () => {

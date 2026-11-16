@@ -1,6 +1,7 @@
 // Module Worker wrapping gif_encoder.js so GIF export never blocks the page.
 //   new Worker(new URL('./gif_worker.js', import.meta.url), { type: 'module' })
-// Main -> worker: {type:'start', width, height, delayCs, dither, total, loop?, maxColors?}; {type:'frame', rgba}
+// Main -> worker: {type:'start', width, height, delayCs, dither, total, loop?, maxColors?,
+// optimize? (default true: crop to changed pixels, unchanged ones transparent)}; {type:'frame', rgba}
 // (ArrayBuffer, transferred) per frame; {type:'finish'}; {type:'cancel'} at any time.
 // Worker -> main: {type:'progress', done, total} while encoding; {type:'done', bytes} (Uint8Array, buffer transferred);
 // {type:'cancelled'}; {type:'error', message}.
@@ -13,12 +14,12 @@ const post = (m, t) => self.postMessage(m, t || []);
 const tick = () => new Promise(r => setTimeout(r, 0));
 
 async function encode(j) {
-  const { width, height, delayCs = 5, dither = true, loop = 0, maxColors = 256, frames } = j;
+  const { width, height, delayCs = 5, dither = true, loop = 0, maxColors = 256, optimize = true, frames } = j;
   if (!frames.length) throw new Error('no frames to encode');
-  const pal = quantize(frames, maxColors);
+  const pal = quantize(frames, optimize ? maxColors - 1 : maxColors);   // one slot kept for transparency
   await tick();
   if (j.cancelled) return;
-  const gw = new GifWriter(width, height, { loop, palette: pal, delayCs });
+  const gw = new GifWriter(width, height, { loop, palette: pal, delayCs, optimize });
   for (let i = 0; i < frames.length; i++) {
     gw.addFrame(frames[i], { dither });
     frames[i] = null;                                          // release memory as we go

@@ -79,16 +79,17 @@ vec3 lightAt(vec2 px) {
 void main() {
   vec2 px = uv * res;
   vec4 m = texture(mat, uv);
-  vec3 lt = lightAt(px);
+  vec3 lt = lightAt(px) * exposure;                                  // exposure scales only what the fireworks add,
+                                                                     // so the static scene stays put (GIF exports)
   vec3 col = lin(texture(back, uv).rgb);
   col += lt * (m.r * 0.16 + m.b * sky * 0.018 + m.g * 0.02) + vec3(0.6, 0.65, 0.8) * min(flash, 1.5) * 0.004 * m.b;
-  vec3 f = rt(fw, uv);
+  vec3 f = rt(fw, uv) * exposure;
   if (m.g > 0.5 && uv.y > wl) {                                       // reflections on water
     float d = uv.y - wl;
     vec2 r = vec2(uv.x + (sin(uv.y * 900.0 + time * 2.1) * 0.6 + sin(uv.y * 310.0 - time * 1.3)) * d * 0.012,
                   wl - d * 0.85);
     vec3 refl = rt(fw, r) * 0.9 + rt(b0, r) * 0.6 + rt(b1, r) * 0.5;
-    col += refl * m.g * (0.35 + 0.4 * d / (1.0 - wl));
+    col += refl * exposure * m.g * (0.35 + 0.4 * d / (1.0 - wl));
   }
   vec4 sm = texture(smoke, vec2(uv.x, 1.0 - uv.y));
   col = col * (1.0 - sm.a) + sm.rgb;
@@ -97,8 +98,8 @@ void main() {
   vec3 fl = lin(fr.rgb) + lt * m.r * 0.12;
   col = mix(col, fl, fr.a);
   if (useWx > 0.5) { vec4 w = texture(wx, uv); col = mix(col, lin(w.rgb), w.a); }
-  col += (rt(b0, uv) * 0.55 + rt(b1, uv) * 0.45 + rt(b2, uv) * 0.5) * bloom;
-  col = aces(col * exposure);
+  col += (rt(b0, uv) * 0.55 + rt(b1, uv) * 0.45 + rt(b2, uv) * 0.5) * bloom * exposure;
+  col = aces(col);
   col = pow(col, vec3(1.0 / 2.2));
   vec2 q = uv - 0.5; col *= 1.0 - dot(q, q) * 0.55;                   // vignette
   col += (h(px + fract(time) * 91.7) - 0.5) * grain;                 // film grain

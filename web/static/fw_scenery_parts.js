@@ -96,17 +96,24 @@ export function range(c, m, W, H, seed, opts, colTop, colBot, albedo, bottom = H
   fillRidge(c, W, H, r, g, bottom); fillRidge(m, W, H, r, mat(albedo), bottom);
   return r;
 }
-// Snow on the highest parts of a ridge: a band under the crest wherever the crest is above `line` (px).
+// Snow on the highest parts of a ridge: polygons hugging the crest wherever it rises above `line` (px), thicker
+// higher up, with a ragged lower edge; drawn semi-transparent so the haze of the range shows through.
 export function snow(c, m, { ys, step }, line, depth, seed) {
-  c.save(); m.save();
-  for (let i = 0; i < ys.length - 1; i++) {
-    const y = ys[i];
-    if (y > line) continue;
-    const h = Math.min(depth, (line - y) * 0.8) * (0.6 + 0.8 * fbm1(seed, i * 0.07, 3));
-    c.fillStyle = rgb(150, 160, 185, 0.55); c.fillRect(i * step, y, step + 0.5, Math.min(h, depth));
-    m.fillStyle = mat(0.9); m.fillRect(i * step, y, step + 0.5, Math.min(h, depth));
-  }
-  c.restore(); m.restore();
+  let run = [];
+  const flush = () => {
+    if (run.length > 2) for (const [k, col] of [[c, rgb(150, 160, 186, 0.5)], [m, mat(0.9)]]) {
+      k.beginPath();
+      run.forEach(([x, y]) => k.lineTo(x, y));
+      for (let r = run.length - 1; r >= 0; r--) {
+        const [x, y] = run[r], h = Math.min(depth, (line - y) * 0.9) * (0.45 + 0.9 * fbm1(seed, x * 0.02, 4));
+        k.lineTo(x, y + Math.max(0, h));
+      }
+      k.closePath(); k.fillStyle = col; k.fill();
+    }
+    run = [];
+  };
+  ys.forEach((y, i) => { if (y < line) run.push([i * step, y]); else flush(); });
+  flush();
 }
 
 // Conifer silhouette (layered jagged tiers) or broadleaf (noisy blob) at base (x, y), height h.

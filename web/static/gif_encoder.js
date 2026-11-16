@@ -4,7 +4,8 @@
 //                             colours they are used exactly; otherwise median cut over a 15-bit histogram, run separately
 //                             on dark and bright pixels so firework frames (mostly near-black, with small saturated
 //                             highlights) keep both their dark shades and their bright colours; pure black is reserved.
-//   GifWriter                 header, global colour table, NETSCAPE2.0 loop, per frame GCE + image + LZW data, trailer.
+//   GifWriter                 header, global colour table, NETSCAPE2.0 loop, per frame GCE + image + LZW data, trailer;
+//                             later frames cropped to what changed, unchanged pixels transparent (optimize, default).
 //   encodeGIF(frames, w, h)   both in one call.          estimateGifBytes(w, h, n)   rough size for a warning.
 
 const DARK_LUMA = 48;        // luma (0..255) below which a histogram bin counts as dark for the palette split
@@ -194,14 +195,24 @@ const clamp = v => v < 0 ? 0 : v > 255 ? 255 : v;
 export class GifWriter {
   // palette: a quantize() result, or a Uint8Array of r,g,b triples (padded to a power of two here if needed).
   // loop: 0 = forever, n = n repeats, < 0 = no NETSCAPE extension (play once). delayCs: frame delay in 1/100 s.
-  constructor(width, height, { loop = 0, palette, delayCs = 5 } = {}) {
+  // optimize: frames after the first are cropped to the bounding box of pixels whose palette index changed, and
+  // unchanged pixels inside it become a reserved transparent index (disposal 1 keeps the previous frame underneath)
+// when that encodes smaller than the plain crop.
+  // The transparent index is the first palette slot after the used colours (the table is doubled if it is full and
+  // < 256 entries); with 256 used colours only the cropping applies, so quantize to maxColors - 1 when optimising.
+  constructor(width, height, { loop = 0, palette, delayCs = 5, optimize = true } = {}) {
     if (!palette) throw new Error('GifWriter needs a palette (use quantize())');
     let pal = palette.palette || palette;
-    const used = palette.colors ?? pal.length / 3, size = pow2Size(pal.length / 3);
+    const used = palette.colors ?? pal.length / 3;
+    let size = pow2Size(pal.length / 3);
+    if (optimize && used >= size && size < 256) size *= 2;
     if (size * 3 !== pal.length) { const p = new Uint8Array(size * 3); p.set(pal); pal = p; }
-    Object.assign(this, { width, height, delayCs, lookup: palette.lookup || makeLookup(pal, used), out: new Bytes() });
+    Object.assign(this, { width, height, delayCs, optimize, lookup: palette.lookup || makeLookup(pal, used), out: new Bytes() });
+    this.trans = optimize && used < size ? used : -1;
     this.minCode = Math.max(2, Math.log2(size));
     this.idx = new Uint8Array(width * height);
+    this.prev = optimize ? new Uint8Array(width * height) : null;
+    this.frames = 0;
     const o = this.out;
     o.str('GIF89a'); o.u16(width); o.u16(height);
     o.byte(0xf0 | (Math.log2(size) - 1)); o.byte(0); o.byte(0);   // GCT present, 8-bit colour resolution, bg 0
@@ -209,7 +220,8 @@ export class GifWriter {
     if (loop >= 0) { o.bytes([0x21, 0xff, 0x0b]); o.str('NETSCAPE2.0'); o.bytes([3, 1, loop & 255, (loop >> 8) & 255, 0]); }
   }
 
-  // rgba: width*height*4 bytes. Maps to palette indices (optionally Bayer-dithered) and appends one frame.
+  // rgba: width*height*4 bytes. Maps to palette indices (optionally Bayer-dithered; the pattern is fixed per pixel
+  // position, so static areas keep their indices frame to frame) and appends one frame.
   addFrame(rgba, { dither = true, delayCs = this.delayCs } = {}) {
     const { width: w, height: h, idx, lookup, out: o } = this;
     if (rgba.length < w * h * 4) throw new Error(`frame has ${rgba.length} bytes, expected ${w * h * 4}`);
@@ -224,9 +236,52 @@ export class GifWriter {
         idx[q] = lookup(r, g, b);
       }
     }
-    o.bytes([0x21, 0xf9, 4, 1 << 2, delayCs & 255, (delayCs >> 8) & 255, 0, 0]);   // GCE: disposal 1, no transparency
-    o.byte(0x2c); o.u16(0); o.u16(0); o.u16(w); o.u16(h); o.byte(0);               // image descriptor, no local table
-    lzwEncode(idx, this.minCode, o);
+    let x0 = 0, y0 = 0, x1 = w - 1, y1 = h - 1, data = idx, ti = -1;
+    const lzw = new Bytes(1 << 12);
+    if (this.optimize && this.frames > 0) {
+      const prev = this.prev;
+      x0 = w; y0 = h; x1 = -1; y1 = -1;
+      for (let y = 0, q = 0; y < h; y++) {
+        for (let x = 0; x < w; x++, q++) {
+          if (idx[q] === prev[q]) continue;
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y0 === h) y0 = y;
+          y1 = y;
+        }
+      }
+      if (x1 < 0) {                                     // nothing changed: a 1x1 frame that keeps the picture
+        x0 = y0 = x1 = y1 = 0;
+        ti = this.trans;
+        data = Uint8Array.of(ti >= 0 ? ti : prev[0]);
+      } else {
+        // the crop as it is, and (if an index is free) with unchanged pixels transparent; the smaller one is kept,
+        // since where nearly everything changes (dense, flickering bursts) transparency only breaks up LZW runs
+        const cw = x1 - x0 + 1, ch = y1 - y0 + 1, raw = new Uint8Array(cw * ch), tr = this.trans;
+        const masked = tr >= 0 ? new Uint8Array(cw * ch) : null;
+        for (let y = 0, k = 0; y < ch; y++) {
+          for (let x = 0, q = (y0 + y) * w + x0; x < cw; x++, q++, k++) {
+            raw[k] = idx[q];
+            if (masked) masked[k] = idx[q] === prev[q] ? tr : idx[q];
+          }
+        }
+        data = raw;
+        if (masked) {
+          lzwEncode(masked, this.minCode, lzw);
+          const alt = new Bytes(lzw.n + 256);
+          lzwEncode(raw, this.minCode, alt);
+          data = null;
+          if (alt.n >= lzw.n) ti = tr; else { lzw.buf = alt.buf; lzw.n = alt.n; }
+        }
+      }
+    }
+    if (data) lzwEncode(data, this.minCode, lzw);
+    if (this.prev) this.prev.set(idx);
+    this.frames++;
+    // GCE: disposal 1 (do not dispose), transparency flag + index when the frame uses it
+    o.bytes([0x21, 0xf9, 4, (1 << 2) | (ti >= 0 ? 1 : 0), delayCs & 255, (delayCs >> 8) & 255, ti >= 0 ? ti : 0, 0]);
+    o.byte(0x2c); o.u16(x0); o.u16(y0); o.u16(x1 - x0 + 1); o.u16(y1 - y0 + 1); o.byte(0);   // no local table
+    o.bytes(lzw.buf.subarray(0, lzw.n));
     return this;
   }
 
@@ -236,15 +291,18 @@ export class GifWriter {
   }
 }
 
-// Rough size, deliberately on the high side: 0.35 bytes per pixel per frame plus fixed overhead. A synthetic 480x270
+// Rough size: 0.22 bytes per pixel per frame plus fixed overhead (real exports of the realistic display, frame
+// differencing on, measured 0.12-0.2). A synthetic 480x270
 // burst over a dark gradient sky measured 0.12 B/px/frame dithered (0.06 undithered); textured backgrounds (stars,
 // mountains, rain) cost more, and full-frame random noise reaches ~1 B/px.
-export const estimateGifBytes = (width, height, frames) => Math.round(800 + frames * (20 + width * height * 0.35));
+export const estimateGifBytes = (width, height, frames) => Math.round(800 + frames * (20 + width * height * 0.22));
 
-// frames: array of RGBA arrays. opts: { maxColors = 256, dither = true, delayCs = 5, loop = 0, onProgress(done, total) }.
-export function encodeGIF(frames, width, height, { maxColors = 256, dither = true, delayCs = 5, loop = 0, onProgress } = {}) {
-  const q = quantize(frames, maxColors);
-  const gw = new GifWriter(width, height, { loop, palette: q, delayCs });
+// frames: array of RGBA arrays. opts: { maxColors = 256, dither = true, delayCs = 5, loop = 0, optimize = true,
+// onProgress(done, total) }. With optimize, one of the maxColors palette entries is the transparent index.
+export function encodeGIF(frames, width, height,
+  { maxColors = 256, dither = true, delayCs = 5, loop = 0, optimize = true, onProgress } = {}) {
+  const q = quantize(frames, optimize ? maxColors - 1 : maxColors);
+  const gw = new GifWriter(width, height, { loop, palette: q, delayCs, optimize });
   frames.forEach((f, i) => { gw.addFrame(f, { dither }); onProgress?.(i + 1, frames.length); });
   return gw.finish();
 }
