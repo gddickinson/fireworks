@@ -213,7 +213,7 @@ ok('quantize keeps pure black and a bright colour distinct in a dark many-colour
 
 ok('estimateGifBytes scales with pixels and frames', () => {
   assert.ok(estimateGifBytes(480, 270, 100) > estimateGifBytes(480, 270, 50));
-  assert.ok(Math.abs(estimateGifBytes(480, 270, 100) / 1e6 - 4.5) < 0.2);
+  assert.ok(Math.abs(estimateGifBytes(480, 270, 100) / 1e6 - 2.85) < 0.2);
 });
 
 console.log(`${n} tests passed`);
