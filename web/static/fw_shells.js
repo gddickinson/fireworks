@@ -12,7 +12,7 @@ export const LABELS = { peony: 'Peony', chrysanthemum: 'Chrysanthemum', willow: 
 export function makeRecipe(rand, type, color = null) {
   if (color === null) color = pickColor(rand);
   const second = pickColor(rand);
-  const r = { type, color: [...color], color2: null, pistil: null, size: rand.uniform(0.85, 1.15) };
+  const r = { type, color: [...color], color2: null, pistil: null, size: rand.uniform(0.95, 1.35) };
   const roll = rand.random();
   if (['peony', 'ring', 'chrysanthemum'].includes(type) && roll < 0.4) r.pistil = second;
   else if (['peony', 'crossette'].includes(type) && roll < 0.7) r.color2 = second;

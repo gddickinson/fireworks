@@ -37,7 +37,7 @@ def make_recipe(rand, type_: str, color=None) -> dict:
     if color is None:
         color = pick_color(rand)
     second = pick_color(rand)
-    r = {"type": type_, "color": tuple(color), "color2": None, "pistil": None, "size": rand.uniform(0.85, 1.15)}
+    r = {"type": type_, "color": tuple(color), "color2": None, "pistil": None, "size": rand.uniform(0.95, 1.35)}
     roll = rand.random()
     if type_ in ("peony", "ring", "chrysanthemum") and roll < 0.4:
         r["pistil"] = second
