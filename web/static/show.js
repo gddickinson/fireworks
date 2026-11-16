@@ -62,7 +62,7 @@ route('show', async (args, query) => {
     el = buildPanel($('#ctl'), V, D, st, actions);
     $('#xgrp').hidden = st.renderer === 'classic';
     if (V.R) buildExportPanel($('#xp'), { getView: () => V, audio: () => (st.sound ? audio.stream() : null),
-      prepare: { label: 'Start the recording with the finale', run: () => V.finale() } });
+      prepare: { label: 'Record the finale (skips the first shells\' climb)', run: () => { V.finale(); for (let i = 0; i < 300; i++) V.step(); } } });
     if (query.finale && V.finale) V.finale();
     if (reducedMotion()) {                                    // a still frame; Play starts it
       if (V.R) for (let i = 0; i < 600; i++) V.step();

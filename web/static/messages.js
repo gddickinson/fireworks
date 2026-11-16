@@ -88,7 +88,7 @@ route('messages', async (args, query) => {
     catch { $('#note').innerHTML = `Copy this link: <input readonly value="${esc(url)}" aria-label="Greeting link">`; }
   };
   buildExportPanel($('#xp'), { getView: () => V, name: 'fireworks-message', link: () => location.href.split('#')[0] + encodeQuery(ui),
-    audio: () => ($('#snd').checked ? audio.stream() : null), prepare: { label: 'Record the message show from its start', run: play } });
+    audio: () => ($('#snd').checked ? audio.stream() : null), prepare: { label: 'Record the message show from its start (skips the climb)', run: () => { play(); for (let i = 0; i < 270; i++) V.step(); } } });
   V.opts.onFrame = v => {                                    // repeat once the last letters have fallen
     if (v.sim.frame % 30 === 0 && $('#loop').checked && v.director.mode === 'auto' && !v.sim.stars.some(s => s.target)) play();
   };
