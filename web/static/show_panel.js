@@ -80,8 +80,12 @@ export function buildPanel(host, V, D, st, actions) {
 
   // Background Controls
   const bg = group(host, 'Scene');
-  bg.innerHTML = `${select('background', 'Background', [['None', 'None'], ...D.backgrounds.map(b => [b, b])], st.background)}
-    ${select('weather', 'Weather effect', D.weather.map(w => [w, w]), st.weather)}`;
+  // The realistic view offers its own scenes and weather (V.sceneNames / V.weatherNames); classic: the desktop lists.
+  const scenes = V.sceneNames ? V.sceneNames() : ['None', ...D.backgrounds], wx = V.weatherNames ? V.weatherNames() : D.weather;
+  if (!scenes.includes(st.background)) st.background = scenes.includes('Cityscape') ? 'Cityscape' : scenes[0];
+  if (!wx.includes(st.weather)) st.weather = 'None';
+  bg.innerHTML = `${select('background', 'Background', scenes.map(b => [b, b]), st.background)}
+    ${select('weather', 'Weather effect', wx.map(w => [w, w]), st.weather)}`;
   el.background = bg.querySelector('#background'); el.weather = bg.querySelector('#weather');
   el.background.onchange = () => { st.background = el.background.value; V.setBackground(st.background); };
   el.weather.onchange = () => { st.weather = el.weather.value; V.setWeather(st.weather); };

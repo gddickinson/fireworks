@@ -82,6 +82,9 @@ export class RealView {
     if (!keep) this.setFx();
   }
   setWeather(name) { this.weatherName = name || 'None'; this.setFx(); }
+  sceneNames() { return Object.keys(SCENERY_HORIZON); }
+  weatherNames() { return [...new Set(['None', ...Object.keys(WEATHER), 'Rain', 'Snow', 'Fog', 'Lightning'])]; }
+  setTimeOfDay(t) { this.timeOfDay = t; this.setBackground(this.bgName); }
   setSkyFx(keys) { this.skyFx = new Set(keys); this.setFx(); }
   // (Re)build the plug-in layers: animated scene objects, sky effects, then the weather on top.
   setFx() {

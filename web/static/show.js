@@ -18,7 +18,7 @@ export const audio = new FireworkAudio();
 export function defaultSettings(D) {
   const s = Object.fromEntries(D.sliders.map(x => [x.key, x.default]));
   return { ...s, color: [...(D.firework_rgb || DEFAULT_COLOR)], random_colors: true, pattern: 'None', random_patterns: false,
-    text: '', background: 'Cityscape', weather: 'None', auto_launch: true, renderer: 'realistic', shell_type: 'mixed', sound: false, lift_time: 3 };
+    text: '', background: 'Cityscape', weather: 'None', auto_launch: true, renderer: 'realistic', shell_type: 'mixed', sound: false, lift_time: 3, time_of_day: 'night', sky_fx: [] };
 }
 
 route('show', async (args, query) => {

@@ -4,7 +4,9 @@
 import { FONTS, COLOR_MODES, MAX_CHARS } from './fw_text.js';
 import { OPENERS } from './fw_message_show.js';
 
-export const BGS = ['Cityscape', 'Beach', 'Mountains', 'Forest', 'Night Sky', 'None'];
+import { SCENERY_HORIZON } from './fw_scenery.js';
+
+export const BGS = Object.keys(SCENERY_HORIZON);              // every realistic scene (validated against this)
 const hex = s => (/^[0-9a-f]{6}$/i.test(s || '') ? '#' + s : null);
 const clamp = (v, lo, hi, d) => (Number.isFinite(+v) && v !== '' ? Math.min(hi, Math.max(lo, +v)) : d);
 

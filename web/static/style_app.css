@@ -54,3 +54,4 @@ progress { width:100%; height:10px; accent-color:var(--accent); }
 .presets { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; } .presets button { margin:0; padding:6px 10px; font-size:13px; }
 @media (max-width:900px) { .msg-page { grid-template-columns:1fr; } }
 [hidden] { display:none !important; }
+fieldset.fx { border:1px solid var(--line); border-radius:6px; padding:4px 10px 6px; margin:8px 0; } fieldset.fx legend { padding:0 4px; }
