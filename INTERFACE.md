@@ -12,9 +12,11 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `models/particle.py` | One spark: velocity, gravity, 100-frame fade | `Particle` |
 | `models/firework.py` | Rocket that climbs and bursts at its apex (gravity, launch speed, pattern) | `Firework` |
 | `models/patterns.py` | Explosion shapes (one burst particle per point, `Firework._explode_pattern`) | `CirclePattern`, `HeartPattern`, `StarPattern`, `SpiralPattern`, `DoubleRingPattern`, `RandomPattern`, `TextPattern` |
-| `models/pyro.py` | Realistic engine (Qt-free): 3-D shells/stars in metres, gravity + quadratic drag, tail sparks, crackle, crossette splits, events; camera geometry | `Sim`, `Star`, `sphere_dirs()`, `DT`, `G`, `FOCAL` |
+| `models/pyro.py` | Realistic engine (Qt-free): 3-D shells/stars in metres, gravity + quadratic drag, tail sparks, crackle, crossette splits, events; camera geometry | `Sim`, `Star`, `sphere_dirs()`, `Sim.ground()`, `Sim.lift_time`, `DT`, `G`, `FOCAL` |
 | `models/shell_types.py` | Shell recipes and bursts: peony ... multi-break, salute, pattern, message | `TYPES`, `LABELS`, `make_recipe()`, `burst()` |
-| `models/director.py` | Launch schedule: random auto launch, ~40 s finale programme, message shows | `Director`, `finale_cues()` |
+| `models/director.py` | Launch schedule: random auto launch (+ ground devices), ~40 s finale programme (+ ground segment), message shows | `Director`, `finale_cues()`, `ground_cues()` |
+| `models/message_show.py` | Message-show timeline: opening show (off/short/medium/long), messages with gaps, optional finale; nothing bursts while letters hold | `show_cues()`, `opener_cues()`, `OPENERS` |
+| `models/ground_effects.py` | Ground devices as emitters stepped by `Sim`: gerb, roman candle, mine, cake, niagara | `Emitter`, `make_device()`, `step_device()`, `DEVICES`, `LABELS` |
 | `models/pyro_colors.py` | Pyrotechnic palette; star colour/brightness over its life (ignition flash, cooling ember, strobe, glitter) | `PALETTE`, `pick_color()`, `star_rgb()` |
 | `models/glyphs.py` | 5 x 7 dot-matrix glyphs A-Z, 0-9 for `TextPattern` (also generated to `web/static/fw_glyphs.js`) | `GLYPHS`, `glyph_points()` |
 | `effects/weather.py` | Rain, snow, fog, lightning (update + Qt drawing) | `RainEffect`, `SnowEffect`, `FogEffect`, `FogLayer`, `LightningEffect`, `LightningBolt` |
@@ -54,17 +56,20 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | File | Purpose | Key names |
 |------|---------|-----------|
 | `app.py` | FastAPI: serves `static/`, API `/api/info`, `/defaults`, `/patterns`, `/reference`, `/reference/{name}`, `/reference/scenes`, `/reference/pyro` | `app`, `STATIC`, `STATIC_ENDPOINTS` |
-| `reference_pyro.py` | Seeded runs of the realistic engine (finale, auto, every type, heart pattern, message) | `PYRO_CASES`, `run_pyro()`, `message_points()`, `pyro_fixture()` |
+| `reference_pyro.py` | Seeded runs of the realistic engine (finale, auto, physical lift, every type, heart pattern, message, message show, ground devices) | `PYRO_CASES`, `run_pyro()`, `message_points()`, `pyro_fixture()` |
 | `reference.py` | Seeded runs of the real models with a mulberry32 `random` stand-in shared with JS | `PyRand`, `seeded()`, `run_show()`, `pattern_points()`, `weather_runs()`, `background_scenes()`, `fixture()` |
 | `static/core.js`, `style.css` (kit) | Router, `api()`, `slider()`, `animate()`, `rng()`; shared theme | — |
 | `static/fw_rand.js` | Python-`random`-shaped seeded RNG | `pyRand` |
-| `static/fw_pyro.js`, `fw_shells.js`, `fw_director.js`, `fw_palette.js` | JS copies of `models/pyro.py`, `shell_types.py`, `director.py`, `pyro_colors.py` (same random order) | `Sim`, `Star`, `burst`, `Director`, `starRGB` |
+| `static/fw_pyro.js`, `fw_shells.js`, `fw_director.js`, `fw_palette.js`, `fw_message_show.js`, `fw_ground.js` | JS copies of `models/pyro.py`, `shell_types.py`, `director.py`, `pyro_colors.py`, `message_show.py`, `ground_effects.py` (same random order) | `Sim`, `Star`, `burst`, `Director`, `starRGB` |
 | `static/fw_reference_pyro.js` | Replays the realistic reference runs (Verify page, node test) | `runPyro`, `messagePoints` |
 | `static/real_view.js` | Realistic display: fixed-step loop, settings from the panel's `Show`, adaptive resolution/particle budget, events to listeners | `RealView`, `reducedMotion` |
 | `static/fw_render_gl.js`, `fw_shaders.js` | WebGL2 renderer: HDR point sprites with fading trails, lit smoke, 3-level bloom, composite (scene light, water reflections, tone map, vignette, grain) | `GLRenderer` |
 | `static/fw_render_2d.js` | Canvas 2D fallback of the same layers | `Canvas2DRenderer` |
 | `static/fw_atmos.js` | Camera projection, particle list, burst lights, smoke puffs | `Camera`, `Atmos`, `buildParticles`, `STRIDE` |
-| `static/fw_scenery.js`, `fw_scenery_parts.js`, `fw_noise.js` | Seeded procedural scenery painted once per size into back/front/material canvases (sky, stars, Milky Way, ridgelines, skyline, water, trees) | `buildScenery`, `SCENERY_HORIZON` |
+| `static/fw_scenery.js`, `fw_scenery_parts.js`, `fw_scenery_sky.js`, `fw_scenery_city.js`, `fw_scenery_props.js`, `fw_scenery_houses.js`, `fw_scenery_more.js`, `fw_scenery_land.js`, `fw_noise.js` | Seeded procedural scenery (12 scenes, night/dusk) painted once per size into back/front/material canvases | `buildScenery`, `SCENERY_HORIZON`, `PAINTERS` |
+| `static/fw_fx.js`, `fw_fx_all.js`, `fw_fx_masks.js` | Plug-in layers ('sky' behind, 'over' in front of the fireworks), registries, gusty wind; module loader; sky/water masks | `FxLayers`, `registerWeather`, `registerSkyFx`, `registerSceneFx`, `gustyWind` |
+| `static/fw_wx_rain.js`, `fw_wx_snow.js`, `fw_wx_fog.js`, `fw_wx_clouds.js`, `fw_wx_lightning.js`, `fw_wx_util.js` | Realistic weather plug-ins: rain, snow, fog/mist, clouds, storm/lightning | — |
+| `static/fw_sky_fx.js`, `fw_sky_aurora.js`, `fw_scene_fx.js` | Sky effects (moon, meteors, lanterns, aurora) and scene animations (boats, lighthouse, chimney smoke, beacons, searchlights, turbines) | — |
 | `static/fw_audio.js` | WebAudio launch thumps, booms, crackles with distance delay; MediaStream for video | `FireworkAudio` |
 | `static/fw_text.js`, `msg_link.js` | Message text → star points (real fonts, wrap/fit, colour modes); validated share-link encode/decode | `textPoints`, `splitMessages`, `encodeQuery`, `decodeQuery` |
 | `static/fw_export.js`, `export_panel.js`, `gif_encoder.js`, `gif_worker.js` | PNG/WebP, GIF (own LZW encoder, median-cut palette, frame differencing, Web Worker), MP4/WebM via MediaRecorder; Web Share | `recordGIF`, `recordVideo`, `GifWriter`, `encodeGIF`, `buildExportPanel` |
@@ -78,6 +83,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `static/home.js`, `show.js`, `patterns.js`, `verify.js`, `about.js` | Pages `#/`, `#/show`, `#/patterns`, `#/verify`, `#/about` | — |
 | `static/main.js`, `static_api.js`, `index.html`, `style_app.css`, `icon.svg` | Entry, static-site API, shell, accent theme | — |
 | `static/fw_engine.test.mjs`, `fw_scenes.test.mjs`, `fw_pyro.test.mjs` | Node tests vs `tests/fixtures/fw_reference.json` | — |
+| `static/fw_message_show.test.mjs`, `fw_scenery.test.mjs`, `fw_wx.test.mjs` | Node tests: message-show timeline; scenes and sky/scene plug-ins; weather plug-ins | — |
 | `static/fw_text.test.mjs`, `gif_encoder.test.mjs` | Node tests: message text and share link; GIF encoder (own decoder, round trips) | — |
 
 ## Scripts, tests, CI
@@ -91,6 +97,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `tests/test_config.py`, `test_math_utils.py`, `test_patterns.py`, `test_physics.py` | Pure-logic tests (need PyQt6 via package imports) |
 | `tests/test_weather.py`, `test_canvas.py`, `test_backgrounds.py` | Regression tests of the 2026-11-11 fixes (offscreen Qt) |
 | `tests/test_pyro.py` | Realistic engine physics and shell behaviour (Qt-free) |
+| `tests/test_message_show.py`, `tests/test_ground.py` | Message-show timeline; ground devices (Qt-free) |
 | `tests/test_real_canvas.py` | Desktop realistic mode, text sampler, PNG/GIF export (offscreen Qt) |
 | `tests/test_scenery.py` | Scenery noise vs JS reference values, every scene at two sizes, realistic painting with the scenery, Scenery/Lift time controls (offscreen Qt) |
 | `tests/test_desktop_scenes.py` | New scenes at two sizes + dusk, gusty wind, canvas plug-ins and ground devices, scene controls and their settings (offscreen Qt) |

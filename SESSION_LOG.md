@@ -72,3 +72,18 @@
   matches fw_noise.js to 13 decimals); Scenery Realistic/Classic option; tests/test_scenery.py.
 - Checks: pytest 114 passed (+12 subtests); node 11+11+11+4+7; screenshots --static 10 routes and --base 6 routes ok,
   phone 0 px; George's plist sha1 unchanged.
+
+## 2026-11-16/17 -- Message opener, realistic weather, new scenes and effects (branch `web-interface`, from main e8e7f14)
+- Message shows (`models/message_show.py` + `fw_message_show.js`): opening show Off/Short/Medium/Long (~8/15/25 s:
+  singles, pairs, volleys, dark beat), messages with light side shells between them, optional finale; nothing
+  launched can burst while letters hold (tested in node and pytest); seeded from the share link (`o`, `fin` params,
+  validated); exports record the whole show; reduced motion gets a gentle short opener; desktop has the same options.
+- Plug-in layers (`fw_fx.js`): 'sky'/'over' canvases composited by both renderers; one gusty wind for shells,
+  smoke and weather. Camera: handheld sway, long-exposure photo (web).
+- Ground devices (`models/ground_effects.py` + `fw_ground.js`): gerb, roman candle, mine, cake, niagara; auto/finale
+  options; 3 new fixture runs (JS = Python < 1e-9), existing runs unchanged.
+- Seven new scenes (Harbour, River Bridge, Waterfront, Desert, Snowy Village, Castle, Countryside), dusk, sky
+  effects (moon, aurora, shooting stars, lanterns), scene animations; realistic weather (rain, snow, fog, mist,
+  clouds, storm, lightning). All ported to the desktop (`effects/scenery_*.py`, `wx_*.py`, `sky_fx.py`, ...).
+- Not done: camera zoom/focal option (scenery is painted for one focal length), water-launched half shells,
+  tropical bay / aurora-lake scenes.

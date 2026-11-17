@@ -101,7 +101,19 @@ Optional synthesised sound with the delay of the sound's travel. **Classic displ
 desktop app's original models, checked number for number.
 
 **Messages**: words in the sky in any font and script the browser has (several messages in a row, colours per
-letter, gradient or rainbow, hold time), shareable as a link. **Export & share**: PNG/WebP, animated GIF (own
+letter, gradient or rainbow, hold time), after an optional opening show (off / ~8 / ~15 / ~25 s, built up from
+single shells to volleys, with nothing bursting over the letters while they hold) and an optional finale; the whole
+show is seeded from the link, so a shared greeting plays the same everywhere.
+
+![Opening show, then the message (Waterfront scene)](docs/img/message_opener.png)
+
+**Scenes, weather and effects** (web; see below for the desktop): 12 seeded scenes (Harbour, River Bridge,
+Waterfront, Desert, Snowy Village, Castle, Countryside, Cityscape, Mountains, Beach, Forest, Night Sky) at night or
+blue-hour dusk; rain, snow, fog, mist, clouds, storm and lightning on one gusty wind; moon, aurora, shooting stars
+and sky lanterns; ground devices (gerbs, roman candles, mines, cakes, a niagara falls from the bridge) that are part
+of the checked physics; a handheld camera and a long-exposure photo mode. The desktop app has the same scenes,
+dusk, weather, sky effects, ground devices and message opener (web only: the camera options, smoke puffs,
+adaptive quality and reduced-motion handling). **Export & share**: PNG/WebP, animated GIF (own
 encoder in a Web Worker, frame differencing) and MP4/WebM video (MediaRecorder), all in the browser.
 
 | | |
