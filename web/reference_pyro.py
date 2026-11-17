@@ -24,6 +24,8 @@ PYRO_CASES = [
     {"name": "heart_pattern", "seed": 37, "seconds": 9, "snap_every": 60, "mode": "pattern",
      "gravity": 0.5, "height": 1.2, "stars": 0.6},
     {"name": "message", "seed": 41, "seconds": 12, "snap_every": 60, "mode": "message", "text": "HI 2026"},
+    {"name": "message_show", "seed": 43, "seconds": 36, "snap_every": 120, "mode": "message", "text": "HELLO|2027",
+     "opener": "short", "finale": False},
 ]
 PYRO_BY_NAME = {c["name"]: c for c in PYRO_CASES}
 
@@ -67,11 +69,14 @@ def run_pyro(case: dict) -> dict:
     elif mode == "pattern":
         d.pattern = HeartPattern()
     elif mode == "message":
-        d.queue_messages(sim, [{"points": message_points(case["text"]), "hold": 2.0}])
+        msgs = [{"points": message_points(t), "hold": 2.0} for t in case["text"].split("|")]
+        duration = d.queue_messages(sim, msgs, case.get("opener", "off"), case.get("finale", False))
     elif mode == "types":
         d.auto = False
         for i, t in enumerate(TYPES + ["salute"]):
             sim.launch(d.recipe(t), -0.9 + i * 0.15, None, None, 0.0)
+    if mode != "message":
+        duration = None
     counts = {"launch": 0, "burst": 0, "crackle": 0}
     snaps = []
     steps = int(case["seconds"] * 60)
@@ -82,7 +87,7 @@ def run_pyro(case: dict) -> dict:
         sim.step()
         for e in sim.events:
             counts[e[0]] += 1
-    return {"case": case, "snapshots": snaps}
+    return {"case": case, "snapshots": snaps, "duration": duration}
 
 
 def pyro_fixture() -> list:

@@ -1,5 +1,6 @@
 // Copy of models/director.py: random auto-launch, the choreographed finale and message shows.
 import { TYPES, makeRecipe } from './fw_shells.js';
+import { showCues } from './fw_message_show.js';
 
 export const FINALE_SECONDS = 42;
 
@@ -36,6 +37,7 @@ export class Director {
   constructor(rand) {
     this.rand = rand; this.mode = 'auto'; this.auto = true; this.rate = 1.1; this.shell_type = 'mixed';
     this.color = null; this.pattern = null; this.pattern_scale = 1; this.cues = []; this.t0 = 0;
+    this.until = 0;                                           // programme time before auto launching may resume
   }
   recipe(type = null) {
     const R = this.rand;
@@ -50,11 +52,13 @@ export class Director {
     }
     return rec;
   }
-  startFinale(sim) { this.mode = 'finale'; this.t0 = sim.time; this.cues = finaleCues(this.rand); }
-  queueMessages(sim, messages, gap = 2.5) {
-    this.mode = 'finale'; this.t0 = sim.time; this.cues = [];
-    let t = 0.3;
-    for (const m of messages) { this.cues.push([t, 'message', m]); t += 3 + (m.hold ?? 2.5) + gap; }
+  startFinale(sim) { this.mode = 'finale'; this.t0 = sim.time; this.cues = finaleCues(this.rand); this.until = 0; }
+  // Opening show (off/short/medium/long), the messages, optionally the finale (fw_message_show.js). Returns seconds.
+  queueMessages(sim, messages, opener = 'off', finale = false, gentle = false) {
+    this.mode = 'finale'; this.t0 = sim.time;
+    const [cues, duration] = showCues(this.rand, messages, opener, finale, gentle, sim.lift_time ?? 6);
+    this.cues = cues; this.until = duration;                  // no random shells while letters are in the sky
+    return duration;
   }
   step(sim) {
     if (this.mode === 'finale') {
@@ -70,7 +74,7 @@ export class Director {
           sim.launch(this.recipe(typ), x, null, h, tilt);
         }
       }
-      if (!this.cues.length && now > 1) this.mode = 'auto';
+      if (!this.cues.length && now > Math.max(1, this.until)) this.mode = 'auto';
       return;
     }
     if (this.auto && this.rand.random() < this.rate / 60) sim.launch(this.recipe());

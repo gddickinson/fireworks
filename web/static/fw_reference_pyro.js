@@ -47,8 +47,12 @@ export function runPyro(c) {
   sim.lift_time = 'lift' in c ? c.lift : 3;
   const d = new Director(rand);
   if (c.mode === 'finale') d.startFinale(sim);
-  else if (c.mode === 'pattern') d.pattern = new HeartPattern();
-  else if (c.mode === 'message') d.queueMessages(sim, [{ points: messagePoints(c.text), hold: 2 }]);
+  if (c.mode === 'pattern') d.pattern = new HeartPattern();
+  let duration = null;
+  if (c.mode === 'message') {
+    const msgs = c.text.split('|').map(t => ({ points: messagePoints(t), hold: 2 }));
+    duration = d.queueMessages(sim, msgs, c.opener ?? 'off', c.finale ?? false);
+  }
   else if (c.mode === 'types') {
     d.auto = false;
     [...TYPES, 'salute'].forEach((t, i) => sim.launch(d.recipe(t), -0.9 + i * 0.15, null, null, 0));
@@ -59,5 +63,5 @@ export function runPyro(c) {
     d.step(sim); sim.step();
     for (const e of sim.events) counts[e[0]]++;
   }
-  return { snapshots };
+  return { snapshots, duration };
 }

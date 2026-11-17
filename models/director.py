@@ -5,7 +5,8 @@
     shell_types.TYPES), colour `color` (None: a random pyrotechnic colour per shell);
   * finale: a ~40 s programme (opening pairs, a fan of palms, crossettes and rings, a willow/kamuro curtain, a rapid
     crescendo and a salute barrage), after which it returns to auto.  `finale_cues(rand)` builds the cue list;
-  * messages: `queue_messages()` adds message shells (text points from the front end) spaced by their hold time.
+  * messages: `queue_messages()` plays an optional opening show, the message shells (text points from the front
+    end) and optionally the finale (timeline in models/message_show.py).
 """
 from __future__ import annotations
 
@@ -62,6 +63,7 @@ class Director:
         self.pattern_scale = 1.0
         self.cues: list = []
         self.t0 = 0.0
+        self.until = 0.0             # programme time before auto launching may resume
 
     def recipe(self, type_=None) -> dict:
         R = self.rand
@@ -83,16 +85,20 @@ class Director:
         self.mode = "finale"
         self.t0 = sim.time
         self.cues = finale_cues(self.rand)
+        self.until = 0.0
 
-    def queue_messages(self, sim, messages: list, gap: float = 2.5) -> None:
-        """messages: [{"points": [[u, v, r, g, b], ...], "hold": s}, ...] launched one after another."""
+    def queue_messages(self, sim, messages: list, opener: str = "off", finale: bool = False,
+                       gentle: bool = False) -> float:
+        """messages: [{"points": [[u, v, r, g, b], ...], "hold": s}, ...], shown one after another, after an opening
+        show ("off", "short", "medium", "long"; models/message_show.py) and optionally before the finale.
+        Returns the show's duration in seconds."""
+        from models.message_show import show_cues  # late: message_show imports this module
         self.mode = "finale"
         self.t0 = sim.time
-        t = 0.3
-        self.cues = []
-        for m in messages:
-            self.cues.append((t, "message", m))
-            t += 3.0 + m.get("hold", 2.5) + gap
+        lift = sim.lift_time if sim.lift_time is not None else 6.0
+        self.cues, duration = show_cues(self.rand, messages, opener, finale, gentle, lift)
+        self.until = duration         # no random shells while letters are in the sky
+        return duration
 
     def step(self, sim) -> None:
         if self.mode == "finale":
@@ -107,7 +113,7 @@ class Director:
                 else:
                     _, typ, x, h, tilt = cue
                     sim.launch(self.recipe(typ), x, None, h, tilt)
-            if not self.cues and now > 1.0:
+            if not self.cues and now > max(1.0, self.until):
                 self.mode = "auto"
             return
         if self.auto and self.rand.random() < self.rate / 60.0:

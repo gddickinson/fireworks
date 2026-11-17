@@ -276,7 +276,8 @@ class FireworksApp(QMainWindow):
 
     def show_message(self, text: str):
         """Spell a message with message shells (realistic renderer)"""
-        if not self.canvas.show_message(text):
+        opener, finale = self.controls.message_options()
+        if not self.canvas.show_message(text, opener=opener, finale=finale):
             self.statusBar().showMessage('Type a message first', 3000)
 
 

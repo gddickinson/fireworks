@@ -75,8 +75,8 @@ class RealShow:
     def start_finale(self) -> None:
         self.director.start_finale(self.sim)
 
-    def queue_messages(self, messages: list) -> None:
-        self.director.queue_messages(self.sim, messages)
+    def queue_messages(self, messages: list, opener: str = "off", finale: bool = False) -> float:
+        return self.director.queue_messages(self.sim, messages, opener, finale)
 
     def clear(self) -> None:
         self.sim.stars.clear()

@@ -72,14 +72,15 @@ class RealisticMixin:
     def start_finale(self) -> None:
         self._ensure_real().start_finale()
 
-    def show_message(self, text: str, hold: float = 2.5) -> bool:
-        """Queue a message shell spelling `text`; False when the text gives no stars."""
+    def show_message(self, text: str, hold: float = 2.5, opener: str = "off", finale: bool = False) -> bool:
+        """Queue a message show spelling `text` (opening show "off"/"short"/"medium"/"long" first, optional finale
+        after); False when the text gives no stars."""
         real = self._ensure_real()
         self._real_sync()
         msgs = message(text, real.sim.aspect, real.sim.horizon, hold)
         if not msgs:
             return False
-        real.queue_messages(msgs)
+        real.queue_messages(msgs, opener, finale)
         return True
 
     # --- state ----------------------------------------------------------------------------------------------

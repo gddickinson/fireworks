@@ -355,6 +355,10 @@ class ControlPanel(QWidget):
         self.message_button.clicked.connect(
             lambda: self.message_requested.emit(self.message_input.text()))
         self.message_input.returnPressed.connect(self.message_button.click)
+        self.opener_combo = QComboBox()                   # opening show before the message (models/message_show.py)
+        self.opener_combo.addItems(list(U.OPENERS))
+        self.opener_combo.setCurrentIndex(1)
+        self.message_finale = QCheckBox("Finale after the message")
 
         self.renderer_combo.currentTextChanged.connect(self._update_show_controls)
         self._update_show_controls(self.renderer_combo.currentText())
@@ -369,6 +373,9 @@ class ControlPanel(QWidget):
         layout.addWidget(self.shell_combo)
         layout.addWidget(self.finale_button)
         layout.addWidget(self.message_input)
+        layout.addWidget(QLabel("Opening show before the message:"))
+        layout.addWidget(self.opener_combo)
+        layout.addWidget(self.message_finale)
         layout.addWidget(self.message_button)
         group.setLayout(layout)
         return group
@@ -377,8 +384,12 @@ class ControlPanel(QWidget):
         """Shell type, finale and messages exist only in the realistic renderer"""
         real = renderer == "Realistic"
         for w in (self.scenery_combo, self.lift_slider, self.shell_combo, self.finale_button, self.message_input,
-                  self.message_button):
+                  self.message_button, self.opener_combo, self.message_finale):
             w.setEnabled(real)
+
+    def message_options(self) -> tuple:
+        """(opener level, finale on) for the next message show"""
+        return U.OPENERS[self.opener_combo.currentText()], self.message_finale.isChecked()
 
     def lift_time(self) -> float:
         return self.lift_slider.value() * U.LIFT_TIME.scale

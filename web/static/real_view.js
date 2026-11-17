@@ -99,7 +99,11 @@ export class RealView {
     return this.sim.launch(this.director.recipe(type), xFrac === null ? null : xFrac, xFrac === null ? null : 450, null, 0);
   }
   finale() { this.sync(); this.director.startFinale(this.sim); }
-  messages(list) { this.sync(); this.director.queueMessages(this.sim, list); }
+  // Message show (fw_message_show.js); returns its duration in seconds.
+  messages(list, opener = 'off', finale = false) {
+    this.sync();
+    return this.director.queueMessages(this.sim, list, opener, finale, this.reduced);
+  }
   on(fn) { this.listeners.push(fn); }
   step() {
     this.sync();

@@ -14,6 +14,7 @@ WEATHER = ["None", "Rain", "Snow", "Fog", "Lightning"]
 RENDERERS = ["Realistic", "Classic"]    # desktop: gui/real_painter.py (3-D shells) or the original particle model
 SCENERIES = ["Realistic", "Classic"]    # desktop realistic renderer: effects/scenery.py or effects/backgrounds.py
 SHELL_TYPES = ["Mixed"] + [LABELS[t] for t in TYPES]   # realistic mode; "Mixed" draws a type per shell
+OPENERS = {"Off": "off", "Short (~8 s)": "short", "Medium (~15 s)": "medium", "Long (~25 s)": "long"}  # message shows
 
 
 @dataclass(frozen=True)

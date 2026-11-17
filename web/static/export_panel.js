@@ -31,12 +31,16 @@ export function buildExportPanel(host, { getView, prepare = null, link = null, a
       <button class="alt" data-x="cancel">Cancel</button></div>
     <p class="small" id="x-out" aria-live="polite"></p>`;
   const $ = s => host.querySelector(s), out = $('#x-out');
+  // A prepared recording with its own length (the whole message show) overrides the Length menus, capped.
+  const whole = () => (prepare?.seconds && $('#x-prep')?.checked ? prepare.seconds() : 0);
+  const secs = (sel, cap) => (whole() ? Math.min(cap, Math.ceil(whole())) : +$(sel).value);
   const est = () => {
     const V = getView(), w = +$('#g-w').value, h = Math.round(w * V.canvas.height / Math.max(1, V.canvas.width));
-    const n = +$('#g-sec').value * +$('#g-fps').value;
-    $('#g-est').textContent = `${n} frames at ${w} × ${h}: about ${fmtBytes(estimateGifBytes(w, h, n) * ($('#g-dither').checked ? 1 : 0.6))} (estimate).`;
+    const n = secs('#g-sec', 20) * +$('#g-fps').value;
+    $('#g-est').textContent = `${whole() ? `Whole show: ${Math.ceil(whole())} s (GIF up to 20 s, video up to 60 s). ` : ''}${n} frames at ${w} × ${h}: about ${fmtBytes(estimateGifBytes(w, h, n) * ($('#g-dither').checked ? 1 : 0.6))} (estimate).`;
   };
-  for (const id of ['#g-sec', '#g-fps', '#g-w', '#g-dither']) $(id).addEventListener('change', est);
+  for (const id of ['#g-sec', '#g-fps', '#g-w', '#g-dither', '#x-prep']) $(id)?.addEventListener('change', est);
+  host.closest('details')?.addEventListener('toggle', est);
   est();
   let ctl = null, last = null;
   const busy = on => { $('#x-busy').hidden = !on; host.querySelectorAll('button[data-x]:not([data-x=cancel])').forEach(b => { b.disabled = on || (b.dataset.x === 'video' && !vt); }); };
@@ -71,12 +75,12 @@ export function buildExportPanel(host, { getView, prepare = null, link = null, a
       try { await navigator.clipboard.writeText(url); out.textContent = 'Link copied.'; }
       catch { out.innerHTML = `Copy this link: <input readonly value="${esc(url)}" aria-label="Link">`; }
     } else if (x === 'gif') run(async (signal, t0) => {
-      const b = await recordGIF(V, { seconds: +$('#g-sec').value, fps: +$('#g-fps').value, width: +$('#g-w').value,
+      const b = await recordGIF(V, { seconds: secs('#g-sec', 20), fps: +$('#g-fps').value, width: +$('#g-w').value,
         dither: $('#g-dither').checked, onProgress: progress, signal });
       await finish(b, `${name}.gif`, t0);
     });
     else if (x === 'video') run(async (signal, t0) => {
-      const b = await recordVideo(V, { seconds: +$('#v-sec').value, audio: audio(), onProgress: progress, signal });
+      const b = await recordVideo(V, { seconds: secs('#v-sec', 60), audio: audio(), onProgress: progress, signal });
       await finish(b, `${name}.${videoExt(vt)}`, t0);
     });
   });

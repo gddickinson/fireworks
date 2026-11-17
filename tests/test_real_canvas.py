@@ -219,7 +219,7 @@ class TestMainWindowRealistic(unittest.TestCase):
         self.assertEqual(w.canvas.real_show.director.shell_type, "palm")
         w.controls.message_input.setText("OK")
         w.controls.message_button.click()
-        self.assertEqual(w.canvas.real_show.director.cues[0][1], "message")
+        self.assertIn("message", [c[1] for c in w.canvas.real_show.director.cues])  # after the opening show
         w.controls.finale_button.click()
         self.assertEqual(w.canvas.real_show.director.mode, "finale")
         w.controls.renderer_combo.setCurrentText("Classic")
@@ -248,3 +248,12 @@ class TestMainWindowRealistic(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_message_with_opening_show_from_the_controls():
+    """The Opening show option queues opener shells before the message shell (desktop)."""
+    c = _canvas()
+    assert c.show_message("HI", opener="short")
+    cues = c.real_show.director.cues
+    first_msg = next(i for i, q in enumerate(cues) if q[1] == "message")
+    assert first_msg > 5 and cues[first_msg][0] > 6.0

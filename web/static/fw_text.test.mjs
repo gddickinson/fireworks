@@ -23,7 +23,7 @@ test('word wrapping into balanced lines keeps explicit line breaks', () => {
 
 test('greeting link round-trips the options', () => {
   const o = { text: 'Happy Birthday\n{name}!', name: 'Zoë', font: 'script', mode: 'gradient', c1: '#ff0000', c2: '#00ff88',
-    size: 70, hold: 4, bg: 'Beach' };
+    size: 70, hold: 4, bg: 'Beach', opener: 'medium', finale: true };
   const hash = encodeQuery(o);
   assert.ok(hash.startsWith('#/messages?') && !hash.includes(' '));
   const q = Object.fromEntries(new URLSearchParams(hash.split('?')[1]));

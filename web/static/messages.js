@@ -4,7 +4,8 @@
 import { route, app, onLeave, esc, $ } from './core.js';
 import { RealView, reducedMotion } from './real_view.js';
 import { FONTS, COLOR_MODES, MAX_CHARS, splitMessages, textPoints } from './fw_text.js';
-import { BGS, decodeQuery, encodeQuery } from './msg_link.js';
+import { BGS, decodeQuery, encodeQuery, showSeed } from './msg_link.js';
+import { OPENER_LABELS } from './fw_message_show.js';
 import { buildExportPanel } from './export_panel.js';
 import { audio } from './show.js';
 import { hexToRgb, rgbToHex } from './fw_color.js';
@@ -34,6 +35,8 @@ route('messages', async (args, query) => {
       <div class="xrow"><label>Size <b id="sv">${o.size}%</b><input type="range" id="ms" min="40" max="100" value="${o.size}"></label>
         <label>Hold <b id="hv">${o.hold} s</b><input type="range" id="mh" min="1" max="8" value="${o.hold}"></label></div>
       <label for="mb">Scene</label><select id="mb">${BGS.map(b => `<option${b === o.bg ? ' selected' : ''}>${esc(b)}</option>`).join('')}</select>
+      <div class="xrow"><label>Opening show before the message <select id="mo">${Object.entries(OPENER_LABELS).map(([k, l]) => `<option value="${k}"${k === o.opener ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>
+      <label class="chk"><input type="checkbox" id="mfin"${o.finale ? ' checked' : ''}> Finale after the message</label>
       <label class="chk"><input type="checkbox" id="loop" checked> Repeat</label>
       <label class="chk"><input type="checkbox" id="snd"> Sound</label>
       <div class="btns"><button id="play">Play the message show</button><button class="alt" id="copy">Copy greeting link</button></div>
@@ -49,8 +52,9 @@ route('messages', async (args, query) => {
     get text() { return $('#mt').value; }, get name() { return $('#mn').value.trim(); },
     get font() { return $('#mf').value; }, get mode() { return $('#mc').value; }, get c1() { return $('#c1').value; },
     get c2() { return $('#c2').value; }, get size() { return +$('#ms').value; }, get hold() { return +$('#mh').value; },
-    get bg() { return $('#mb').value; },
+    get bg() { return $('#mb').value; }, get opener() { return $('#mo').value; }, get finale() { return $('#mfin').checked; },
   };
+  let showDur = 0;
   const messages = () => splitMessages(ui.text.replace(/\{name\}/g, ui.name || ''));
   const play = () => {
     const list = messages(), out = [];
@@ -61,8 +65,10 @@ route('messages', async (args, query) => {
       if (points.length) out.push({ points, hold: ui.hold, lines });
     }
     $('#lines').textContent = out.length ? out.map(m => m.lines.join(' / ')).join('  →  ') : 'Type a message.';
-    V.sim.stars = V.sim.stars.filter(s => !s.target);
-    if (out.length) V.messages(out);
+    V.reset(showSeed(encodeQuery(ui)));                       // same link -> same show
+    const opener = V.reduced && ui.opener !== 'off' ? 'short' : ui.opener;   // gentler for reduced motion
+    showDur = out.length ? V.messages(out, opener, ui.finale) : 0;
+    if (out.length) $('#lines').textContent += ` · show ${Math.round(showDur)} s`;
     if (V.paused && !reducedMotion()) V.paused = false;
     return out.length;
   };
@@ -73,7 +79,7 @@ route('messages', async (args, query) => {
   };
   let timer = 0;
   const changed = () => { sync(); clearTimeout(timer); timer = setTimeout(play, 600); };
-  for (const id of ['#mt', '#mn', '#mf', '#mc', '#c1', '#c2', '#ms', '#mh']) $(id).addEventListener('input', changed);
+  for (const id of ['#mt', '#mn', '#mf', '#mc', '#c1', '#c2', '#ms', '#mh', '#mo', '#mfin']) $(id).addEventListener('input', changed);
   $('#mb').addEventListener('change', () => { V.setBackground(ui.bg); changed(); });
   $('#snd').addEventListener('change', () => (($('#snd').checked ? audio.enable() : audio.disable())));
   document.querySelector('.presets').addEventListener('click', e => {
@@ -89,7 +95,7 @@ route('messages', async (args, query) => {
     catch { $('#note').innerHTML = `Copy this link: <input readonly value="${esc(url)}" aria-label="Greeting link">`; }
   };
   buildExportPanel($('#xp'), { getView: () => V, name: 'fireworks-message', link: () => location.href.split('#')[0] + encodeQuery(ui),
-    audio: () => ($('#snd').checked ? audio.stream() : null), prepare: { label: 'Record the message show from its start (skips the climb)', run: () => { play(); for (let i = 0; i < 270; i++) V.step(); } } });
+    audio: () => ($('#snd').checked ? audio.stream() : null), prepare: { label: 'Record the current message show (opening show + messages)', run: play, seconds: () => showDur } });
   V.opts.onFrame = v => {                                    // repeat once the last letters have fallen
     if (v.sim.frame % 30 === 0 && $('#loop').checked && v.director.mode === 'auto'
       && !v.sim.stars.some(s => s.target || s.recipe?.type === 'message')) play();   // incl. message shells still rising
