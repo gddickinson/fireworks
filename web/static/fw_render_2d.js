@@ -47,6 +47,8 @@ export class Canvas2DRenderer {
   render(F) {
     const c = this.ctx, W = this.W, H = this.H, S = this.S;
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+    const cm = F.cam || [0, 0, 1];                           // handheld camera: zoom about the centre, then shift
+    c.setTransform(cm[2], 0, 0, cm[2], W / 2 * (1 - cm[2]) - cm[0] * W * cm[2], H / 2 * (1 - cm[2]) - cm[1] * H * cm[2]);
     c.drawImage(S.back, 0, 0, W, H);
     // burst light on the scenery and sky
     const lc = this.light.getContext('2d'), lw = this.light.width, lh = this.light.height, k = lw / W;
@@ -80,7 +82,8 @@ export class Canvas2DRenderer {
       f.drawImage(sprite(lin(P[o + 3]), lin(P[o + 4]), lin(P[o + 5])), P[o] - s / 2, P[o + 1] - s / 2, s, s);
     }
     c.globalCompositeOperation = 'lighter';
-    c.drawImage(this.fw, 0, 0);
+    c.globalAlpha = Math.min(1, F.fwGain ?? 1) || 1;
+    c.drawImage(this.fw, 0, 0); c.globalAlpha = 1;
     const g = this.glow.getContext('2d');
     g.clearRect(0, 0, this.glow.width, this.glow.height);
     g.filter = 'blur(1.5px)';                                  // round glows (ignored where unsupported)
@@ -94,6 +97,7 @@ export class Canvas2DRenderer {
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
     c.drawImage(S.front, 0, 0, W, H);
     if (F.weather) c.drawImage(F.weather, 0, 0, W, H);
+    c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(this.vig, 0, 0);
   }
 }

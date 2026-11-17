@@ -3,6 +3,7 @@
 export const QUAD_VS = `#version 300 es
 in vec2 p; out vec2 uv;
 void main() { uv = vec2(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5); gl_Position = vec4(p, 0.0, 1.0); }`;
+export const COMP_VS = QUAD_VS.replace(/\buv\b/g, 'uv0');
 
 // Stars as additive point sprites: a tight hot core and a soft halo (the bloom passes add the wide glow).
 export const STAR_VS = `#version 300 es
@@ -63,8 +64,9 @@ export const COMPOSITE_FS = `#version 300 es
 precision highp float;
 uniform sampler2D back, front, mat, fw, smoke, b0, b1, b2, wx, skyfx;
 uniform vec4 L[8]; uniform vec3 LC[8]; uniform int nL;
-uniform vec2 res; uniform float wl, time, flash, exposure, bloom, grain, useWx, sky, useSky;
-in vec2 uv; out vec4 o;
+uniform vec2 res; uniform float wl, time, flash, exposure, bloom, grain, useWx, sky, useSky, fwGain;
+uniform vec3 cam;                                   // handheld camera: uv shift (x, y) and zoom
+in vec2 uv0; out vec4 o;
 vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }
 vec3 rt(sampler2D t, vec2 u) { return texture(t, vec2(u.x, 1.0 - u.y)).rgb; }
 vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
@@ -78,6 +80,7 @@ vec3 lightAt(vec2 px) {
   return s / (1.0 + dot(s, vec3(0.3, 0.5, 0.2)) * 0.6);         // soft limit: many bursts do not wash the scene out
 }
 void main() {
+  vec2 uv = (uv0 - 0.5) / cam.z + 0.5 + cam.xy;
   vec2 px = uv * res;
   vec4 m = texture(mat, uv);
   vec3 lt = lightAt(px) * exposure;                                  // exposure scales only what the fireworks add,
@@ -85,7 +88,7 @@ void main() {
   vec3 col = lin(texture(back, uv).rgb);
   col += lt * (m.r * 0.16 + m.b * sky * 0.018 + m.g * 0.02) + vec3(0.6, 0.65, 0.8) * min(flash, 1.5) * 0.004 * m.b;
   if (useSky > 0.5) { vec4 sf = texture(skyfx, uv); col = col * (1.0 - sf.a) + lin(sf.rgb) * sf.a; }  // sky effects layer
-  vec3 f = rt(fw, uv) * exposure;
+  vec3 f = rt(fw, uv) * exposure * fwGain;
   if (m.g > 0.5 && uv.y > wl) {                                       // reflections on water
     float d = uv.y - wl;
     vec2 r = vec2(uv.x + (sin(uv.y * 900.0 + time * 2.1) * 0.6 + sin(uv.y * 310.0 - time * 1.3)) * d * 0.012,
@@ -100,7 +103,7 @@ void main() {
   vec3 fl = lin(fr.rgb) + lt * m.r * 0.12;
   col = mix(col, fl, fr.a);
   if (useWx > 0.5) { vec4 w = texture(wx, uv); col = mix(col, lin(w.rgb), w.a); }
-  col += (rt(b0, uv) * 0.55 + rt(b1, uv) * 0.45 + rt(b2, uv) * 0.5) * bloom * exposure;
+  col += (rt(b0, uv) * 0.55 + rt(b1, uv) * 0.45 + rt(b2, uv) * 0.5) * bloom * exposure * fwGain;
   col = aces(col);
   col = pow(col, vec3(1.0 / 2.2));
   vec2 q = uv - 0.5; col *= 1.0 - dot(q, q) * 0.55;                   // vignette

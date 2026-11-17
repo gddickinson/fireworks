@@ -30,7 +30,7 @@ export class GLRenderer {
     this.P = {
       star: compile(gl, SH.STAR_VS, SH.STAR_FS), smoke: compile(gl, SH.SMOKE_VS, SH.SMOKE_FS),
       fade: compile(gl, SH.QUAD_VS, SH.FADE_FS), down: compile(gl, SH.QUAD_VS, SH.DOWN_FS),
-      blur: compile(gl, SH.QUAD_VS, SH.BLUR_FS), comp: compile(gl, SH.QUAD_VS, SH.COMPOSITE_FS),
+      blur: compile(gl, SH.QUAD_VS, SH.BLUR_FS), comp: compile(gl, SH.COMP_VS, SH.COMPOSITE_FS),
     };
     this.quad = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
@@ -157,7 +157,8 @@ export class GLRenderer {
       gl.uniform2f(u.res, W, H); gl.uniform1f(u.wl, S.water ? S.water / S.H : 2.0);
       gl.uniform1f(u.time, F.time); gl.uniform1f(u.flash, F.flash); gl.uniform1f(u.exposure, F.exposure);
       gl.uniform1f(u.bloom, F.bloom); gl.uniform1f(u.grain, F.grain); gl.uniform1f(u.useWx, F.weather ? 1 : 0);
-      gl.uniform1f(u.sky, 1);
+      gl.uniform1f(u.sky, 1); gl.uniform1f(u.fwGain, F.fwGain ?? 1);
+      const c = F.cam || [0, 0, 1]; gl.uniform3f(u.cam, c[0], c[1], c[2]);
     });
   }
 }

@@ -60,6 +60,7 @@ route('show', async (args, query) => {
     $('#ctl').innerHTML = '';
     buildShowGroup($('#ctl'), V, st, actions);
     el = buildPanel($('#ctl'), V, D, st, actions);
+    if (V.R) cameraGroup($('#ctl'), V, st, el);
     $('#xgrp').hidden = st.renderer === 'classic';
     if (V.R) buildExportPanel($('#xp'), { getView: () => V, audio: () => (st.sound ? audio.stream() : null),
       prepare: { label: 'Record the finale (skips the first shells\' climb)', run: () => { V.finale(); for (let i = 0; i < 300; i++) V.step(); } } });
@@ -73,7 +74,7 @@ route('show', async (args, query) => {
   };
   const actions = {
     launch: () => (V.launch ? V.launch() : V.show.add_firework()),
-    pause: () => { V.paused = !V.paused; el.pauseBtn.textContent = V.paused ? 'Resume' : 'Pause'; },
+    pause: () => { V.paused = !V.paused; if (!V.paused) V.longExposure = false; el.pauseBtn.textContent = V.paused ? 'Resume' : 'Pause'; },
     png: () => { const a = document.createElement('a'); a.href = V.toPNG(); a.download = 'fireworks.png'; a.click(); },
     save: () => { el.savedNote.textContent = store(st) ? 'Settings saved in this browser.' : 'Could not save (storage blocked).'; },
     reset: () => {
@@ -97,3 +98,23 @@ route('show', async (args, query) => {
   document.addEventListener('keydown', keys);
   makeView();
 });
+
+// Camera options of the realistic display: handheld sway and a long-exposure photo (trails build into one still).
+function cameraGroup(host, V, st, el) {
+  const d = document.createElement('details');
+  d.className = 'grp';
+  d.innerHTML = `<summary>Camera</summary><div class="body">
+    <label class="chk"><input type="checkbox" id="sway"${st.sway ? ' checked' : ''}> Handheld (slight sway)</label>
+    <div class="btns"><button class="alt" id="photo">Long-exposure photo (6 s)</button></div>
+    <p class="small mute" id="photonote">Like a camera on a tripod with the shutter open: trails build up into one picture, then it pauses (Save PNG keeps it, Resume goes on).</p></div>`;
+  host.appendChild(d);
+  const sway = d.querySelector('#sway');
+  V.sway = !!st.sway;
+  sway.onchange = () => { st.sway = sway.checked; V.sway = st.sway; };
+  d.querySelector('#photo').onclick = async () => {
+    const b = d.querySelector('#photo'); b.disabled = true; d.querySelector('#photonote').textContent = 'Exposing…';
+    await V.photo(6);
+    b.disabled = false; el.pauseBtn.textContent = 'Resume';
+    d.querySelector('#photonote').textContent = 'Done: Save PNG keeps the photo, Resume goes on.';
+  };
+}

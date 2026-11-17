@@ -146,7 +146,30 @@ export class RealView {
     const amb = S.name === 'Cityscape' ? [0.018, 0.012, 0.01] : [0.006, 0.007, 0.011];
     return { parts: this.parts, n, puffs: this.atmos.screenPuffs(cam, amb), lights,
       flash: this.reduced ? 0 : Math.min(3, this.atmos.flash), time: t, persist: this.reduced ? 0.55 : 0.8,
-      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather, sky };  // no grain in exports (GIFs compress)
+      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather, sky,
+      ...this.cameraState(t) };  // no grain in exports (GIFs compress)
+  }
+  // Camera options: handheld sway (smooth, small, deterministic in time) and the long-exposure photo mode, where the
+  // trails accumulate for the length of the exposure at a lower gain (a still like a tripod photo).
+  cameraState(t) {
+    const out = {};
+    if (this.longExposure) Object.assign(out, { persist: 0.994, fwGain: 0.22, grain: 0 });
+    if (this.sway && !this.reduced && !this.longExposure) {
+      const a = 0.0016;
+      out.cam = [a * (Math.sin(t * 0.9) + 0.6 * Math.sin(t * 2.3 + 1.1)), a * (Math.sin(t * 1.3 + 0.4) + 0.5 * Math.sin(t * 3.1)), 1.012];
+    }
+    return out;
+  }
+  // Take a long-exposure photo: `seconds` of the show build up into one frame; resolves when done (paused).
+  photo(seconds = 6) {
+    this.R.clearTrails?.(); this.longExposure = true; this.paused = false;
+    return new Promise(res => {
+      const t0 = this.sim.time, wait = () => {
+        if (this.sim.time - t0 >= seconds) { this.paused = true; this.draw(); res(); }   // stays a photo until resumed
+        else setTimeout(wait, 100);
+      };
+      wait();
+    });
   }
   draw() { this.R.render(this.frameData()); this.lastN = this.parts && this.sim.stars.length; }
   adapt(ms) {                                                 // keep ~60 fps: drop resolution, then particles
