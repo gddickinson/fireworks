@@ -62,6 +62,7 @@ export class Canvas2DRenderer {
       lc.globalCompositeOperation = 'destination-in'; lc.drawImage(this.albedo, 0, 0);
       c.globalCompositeOperation = 'lighter'; c.drawImage(this.light, 0, 0, W, H);
     }
+    if (F.sky) { c.globalCompositeOperation = 'source-over'; c.drawImage(F.sky, 0, 0, W, H); }
     // smoke
     c.globalCompositeOperation = 'source-over';
     for (const p of F.puffs) {

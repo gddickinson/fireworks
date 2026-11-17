@@ -61,9 +61,9 @@ void main() {
 // weather overlay, bloom, tone mapping, vignette and film grain.
 export const COMPOSITE_FS = `#version 300 es
 precision highp float;
-uniform sampler2D back, front, mat, fw, smoke, b0, b1, b2, wx;
+uniform sampler2D back, front, mat, fw, smoke, b0, b1, b2, wx, skyfx;
 uniform vec4 L[8]; uniform vec3 LC[8]; uniform int nL;
-uniform vec2 res; uniform float wl, time, flash, exposure, bloom, grain, useWx, sky;
+uniform vec2 res; uniform float wl, time, flash, exposure, bloom, grain, useWx, sky, useSky;
 in vec2 uv; out vec4 o;
 vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }
 vec3 rt(sampler2D t, vec2 u) { return texture(t, vec2(u.x, 1.0 - u.y)).rgb; }
@@ -84,6 +84,7 @@ void main() {
                                                                      // so the static scene stays put (GIF exports)
   vec3 col = lin(texture(back, uv).rgb);
   col += lt * (m.r * 0.16 + m.b * sky * 0.018 + m.g * 0.02) + vec3(0.6, 0.65, 0.8) * min(flash, 1.5) * 0.004 * m.b;
+  if (useSky > 0.5) { vec4 sf = texture(skyfx, uv); col = col * (1.0 - sf.a) + lin(sf.rgb) * sf.a; }  // sky effects layer
   vec3 f = rt(fw, uv) * exposure;
   if (m.g > 0.5 && uv.y > wl) {                                       // reflections on water
     float d = uv.y - wl;

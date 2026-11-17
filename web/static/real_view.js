@@ -9,6 +9,8 @@ import { Director } from './fw_director.js';
 import { Atmos, Camera, STRIDE, buildParticles } from './fw_atmos.js';
 import { SCENERY_HORIZON, buildScenery } from './fw_scenery.js';
 import { makeWeather } from './fw_weather.js';
+import { FxLayers, SCENE_FX, SKY_FX, WEATHER, gustyWind } from './fw_fx.js';
+import './fw_fx_all.js';
 import { pyRand } from './fw_rand.js';
 import { prng } from './fw_noise.js';
 import { GLRenderer } from './fw_render_gl.js';
@@ -30,7 +32,8 @@ export class RealView {
     this.scale = 1; this.quality = 1; this.slow = 0; this.fast = 0;
     this.parts = new Float32Array(STRIDE * 40000);
     this.bgName = opts.background || 'Night Sky'; this.weatherName = opts.weather || 'None';
-    this.wx = null; this.wxCanvas = document.createElement('canvas');
+    this.fx = new FxLayers(); this.skyFx = new Set(opts.skyFx || []); this.windBase = 1.5;
+    this.timeOfDay = opts.timeOfDay || 'night';
     this.paused = false; this.listeners = [];
     this.reset(this.seed);
     if (opts.interactive !== false) canvas.addEventListener('pointerdown', e => {
@@ -72,15 +75,27 @@ export class RealView {
   setBackground(name, keep = false) {
     this.bgName = name || 'None';
     const W = this.canvas.width, H = this.canvas.height;
-    this.scenery = buildScenery(this.bgName, W, H, (this.seed % 1000) + 7);
+    this.scenery = buildScenery(this.bgName, W, H, (this.seed % 1000) + 7, { time: this.timeOfDay });
     this.sim.horizon = this.scenery.horizon; this.cam.set(W, H, this.sim.horizon);
     this.R.setScenery(this.scenery);
     if (!keep) this.R.clearTrails?.();
+    if (!keep) this.setFx();
   }
-  setWeather(name) {
-    this.weatherName = name || 'None';
-    this.wxCanvas.width = this.cssW; this.wxCanvas.height = this.cssH;
-    this.wx = makeWeather(this.weatherName, this.cssW, this.cssH, pyRand(this.seed ^ 77));
+  setWeather(name) { this.weatherName = name || 'None'; this.setFx(); }
+  setSkyFx(keys) { this.skyFx = new Set(keys); this.setFx(); }
+  // (Re)build the plug-in layers: animated scene objects, sky effects, then the weather on top.
+  setFx() {
+    const env = this.env(), list = [];
+    if (SCENE_FX[this.bgName]) list.push(SCENE_FX[this.bgName](env));
+    for (const k of this.skyFx) if (SKY_FX[k]) list.push(SKY_FX[k].make(env));
+    if (WEATHER[this.weatherName]) list.push(WEATHER[this.weatherName].make(env));
+    else if (this.weatherName !== 'None') list.push(classicWeather(this.weatherName, env));
+    this.fx.set(list, env);
+  }
+  env() {
+    return { sim: this.sim, cam: this.cam, cssW: this.cssW, cssH: this.cssH, k: this.cssW / Math.max(1, this.cam.W),
+      lights: this.lightsNow || [], time: this.sim.time, wind: this.sim.wind, scenery: this.scenery, seed: this.seed,
+      reduced: this.reduced, quality: this.quality };
   }
   // Settings from the panel's Show (read every frame; they apply to new shells).
   sync() {
@@ -110,25 +125,25 @@ export class RealView {
     this.director.step(this.sim);
     this.sim.step();
     if (this.sim.events.length) { this.atmos.onEvents(this.sim.events, this.sim); for (const f of this.listeners) f(this.sim.events, this); }
+    this.sim.wind = gustyWind(this.windBase, this.sim.time, this.seed);   // one wind for shells, smoke, weather
     this.atmos.update(DT, this.sim.wind);
-    if (this.wx) this.wx.update();
+    this.fx.update(DT, this.env());
     this.show.frame = this.sim.frame;
   }
   frameData() {
     const cam = this.cam, t = this.sim.time, S = this.scenery;
     const n = buildParticles(this.sim, cam, this.parts, { flashes: !this.reduced, pxScale: cam.H / 900,
       fireflies: S.fireflies.length ? S.fireflies : null, time: t });
-    let weather = null;
-    if (this.wx) {
-      const c = this.wxCanvas.getContext('2d'); c.clearRect(0, 0, this.wxCanvas.width, this.wxCanvas.height);
-      this.wx.draw(c); weather = this.wxCanvas;
-    }
     const lights = this.atmos.screenLights(cam, 8), total = lights.reduce((a, L) => a + L.I, 0);
+    this.lightsNow = lights;
+    const env = this.env();
+    this.fx.resize(env);
+    const { sky, over: weather } = this.fx.render(env);
     this.expo = (this.expo ?? 1) * 0.9 + 0.1 / (1 + 0.06 * total);   // eye/camera adapting to a bright finale
     const amb = S.name === 'Cityscape' ? [0.018, 0.012, 0.01] : [0.006, 0.007, 0.011];
     return { parts: this.parts, n, puffs: this.atmos.screenPuffs(cam, amb), lights,
       flash: this.reduced ? 0 : Math.min(3, this.atmos.flash), time: t, persist: this.reduced ? 0.55 : 0.8,
-      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather };  // no grain in exports (GIFs compress)
+      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather, sky };  // no grain in exports (GIFs compress)
   }
   draw() { this.R.render(this.frameData()); this.lastN = this.parts && this.sim.stars.length; }
   adapt(ms) {                                                 // keep ~60 fps: drop resolution, then particles
@@ -166,4 +181,11 @@ export class RealView {
     return this;
   }
   toPNG() { this.draw(); return this.canvas.toDataURL('image/png'); }
+}
+
+// The classic weather effects (fw_weather.js, the verified port) as an "over" plug-in, for names without a
+// realistic version.
+function classicWeather(name, env) {
+  const w = makeWeather(name, env.cssW, env.cssH, pyRand(env.seed ^ 77));
+  return w && { update: () => w.update(), drawOver: c => w.draw(c) };
 }

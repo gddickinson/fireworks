@@ -11,7 +11,7 @@ const canvas = (W, H) => { const c = document.createElement('canvas'); c.width =
 
 export const SCENERY_HORIZON = { None: 0.92, 'Night Sky': 0.86, Cityscape: 0.7, Mountains: 0.76, Beach: 0.66, Forest: 0.82 };
 
-export function buildScenery(name, W, H, seed = 7) {
+export function buildScenery(name, W, H, seed = 7, opts = {}) {   // opts.time: "night" | "dusk"
   W = Math.max(2, Math.round(W)); H = Math.max(2, Math.round(H));
   const back = canvas(W, H), front = canvas(W, H), mt = canvas(W, H);
   const c = back.getContext('2d'), f = front.getContext('2d'), m = mt.getContext('2d');

@@ -110,7 +110,7 @@ export class GLRenderer {
   bind(unit, tex, loc) { const gl = this.gl; gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(loc, unit); }
 
   // F: { parts (Float32Array), n, puffs (from Atmos.screenPuffs), lights (Atmos.screenLights), flash, time,
-  //      persist, exposure, bloom, grain, weather (canvas or null) }
+  //      persist, exposure, bloom, grain, weather / sky (fw_fx.js layer canvases or null) }
   render(F) {
     const gl = this.gl, rt = this.rt, W = this.W, H = this.H;
     gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND);
@@ -143,12 +143,14 @@ export class GLRenderer {
     }
     // 4. composite to the screen
     if (F.weather) this.upload('wx', F.weather);
+    if (F.sky) this.upload('skyfx', F.sky);
     const S = this.scenery, Ls = F.lights;
     this.pass(this.P.comp, null, u => {
       this.bind(0, this.tex.back, u.back); this.bind(1, this.tex.front, u.front); this.bind(2, this.tex.mat, u.mat);
       this.bind(3, rt.fw.t, u.fw); this.bind(4, rt.smoke.t, u.smoke);
       this.bind(5, rt.a0.t, u.b0); this.bind(6, rt.a1.t, u.b1); this.bind(7, rt.a2.t, u.b2);
       this.bind(8, F.weather ? this.tex.wx : this.tex.back, u.wx);
+      this.bind(9, F.sky ? this.tex.skyfx : this.tex.back, u.skyfx); gl.uniform1f(u.useSky, F.sky ? 1 : 0);
       const Lv = new Float32Array(32), Lc = new Float32Array(24);
       Ls.forEach((L, i) => { Lv.set([L.x, L.y, L.r, L.I], i * 4); Lc.set(L.col.map(v => v / 255), i * 3); });
       gl.uniform4fv(u.L, Lv); gl.uniform3fv(u.LC, Lc); gl.uniform1i(u.nL, Ls.length);
