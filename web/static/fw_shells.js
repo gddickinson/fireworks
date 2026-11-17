@@ -95,7 +95,7 @@ export function burst(sim, s) {
 }
 
 function ring(sim, s, n, speed, c) {
-  const R = sim.rand, tilt = R.uniform(0.3, 1.3), turn = R.uniform(0, 2 * Math.PI), life = R.uniform(1.6, 2.0);
+  const R = sim.rand, tilt = R.uniform(0.15, 0.9), turn = R.uniform(-0.7, 0.7), life = R.uniform(1.6, 2.0);
   const ct = Math.cos(tilt), st = Math.sin(tilt), cu = Math.cos(turn), su = Math.sin(turn);
   for (let i = 0; i < n; i++) {
     const a = 2 * Math.PI * i / n, px = Math.cos(a), py = Math.sin(a);

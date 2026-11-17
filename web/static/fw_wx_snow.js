@@ -1,10 +1,10 @@
-// Realistic snow (weather plug-in, see fw_fx.js): flakes at depths from 1.5 to 27 m (near ones large, soft and out
-// of focus, far ones tiny), tumbling in turbulence and drifting with the gusty wind, settling slowly; lit in the
+// Realistic snow (weather plug-in, see fw_fx.js): many small bright flakes at depths from 3 to 60 m in three layers
+// (far: faint specks; middle: small dots; near: slightly larger with a soft bokeh edge), tumbling in turbulence and drifting with the gusty wind, settling slowly; lit in the
 // colour of nearby bursts; and a thin layer of snow slowly building up on the top edges of the silhouettes (skyline,
 // trees, ridges, ground), found once per size from the scenery's material map and front layer.
 //
 // update() logic (plain arithmetic, easy to port):
-//   each flake: depth z (m, 1.5..27.5), px per metre m = 1.5 * H / z, fall speed vf (m/s, 0.6..1.4), phase ph;
+//   each flake: depth z (m, 3..63), px per metre m = 1.5 * H / z, fall speed vf (m/s, 0.6..1.4), phase ph;
 //   turbulence u, w = noise1(seed + i, t * 0.5 + ph) - 0.5, noise1(seed + 7 * i, t * 0.4) - 0.5;
 //   x += (wind + 1.6 u) * m * dt;  y += (vf + 0.5 w) * m * dt; below the bottom: respawn at the top (seeded x);
 //   x wraps around the width. Accumulated depth (px at 800 px height): acc = 0.4 + 3 * (1 - exp(-t / 90)).
@@ -12,18 +12,18 @@ import { noise1, prng, hash } from './fw_noise.js';
 import { registerWeather } from './fw_fx.js';
 import { PXM, budget, canvas, clamp, cssLights, rgba, sceneGeometry, skyTone } from './fw_wx_util.js';
 
-const BASE = 900, FOCUS = 3.2;                                // flakes at 1280 x 800; nearer than FOCUS m is blurred
+const BASE = 2600, FOCUS = 5;                                 // flakes at 1280 x 800; nearer than FOCUS m: soft bokeh
 
 export function makeSnow(env, opts = {}) {
   const seed = (env.seed ^ 0x5e0f) >>> 0, R = prng(seed), dens = opts.density ?? 1;
   const flakes = [];
   let W = 1, H = 1, t = 0, vxMean = 0;
   const newFlake = top => {
-    const u = R(), z = 1.5 + 26 * u ** 1.4;                    // many far flakes, a few close to the lens
+    const u = R(), z = 3 + 60 * u ** 1.15;                      // most flakes far, a few close to the lens
     return { x: R() * W, y: top ? -10 - R() * 20 : R() * H, z, vf: 0.6 + R() * 0.8, ph: R() * 100, sz: 0.6 + R() * 0.8, id: (R() * 1e6) | 0 };
   };
   function fill(env) {
-    const n = budget(env, BASE * dens, BASE * dens * 2);
+    const n = budget(env, BASE * dens * (env.intensity ?? 1), BASE * dens * 2.5);   // env.intensity: panel slider
     if (flakes.length > n) flakes.length = n;
     while (flakes.length < n) flakes.push(newFlake(false));
   }
@@ -49,6 +49,8 @@ export function makeSnow(env, opts = {}) {
     },
     stats() { return { count: flakes.length, vx: vxMean, acc: P.acc }; },
     drawOver(c, env) { drawSnow(c, env, P, W, H, t); },
+    // a faint veil and burst light scattered by the falling snow, drawn by the renderer (see fw_wx_rain.js)
+    atmosphere(env) { return { veil: [...skyTone(env).haze.map(v => v * 1.2), 0.05, 0.06], scatter: 0.05 * (env.intensity ?? 1) }; },
   };
   P.resize(env);
   return P;
@@ -59,8 +61,8 @@ function sprite() {
   if (SPRITE) return SPRITE;
   SPRITE = canvas(32, 32);
   const x = SPRITE.getContext('2d'), g = x.createRadialGradient(16, 16, 0, 16, 16, 16);
-  g.addColorStop(0, 'rgba(215,220,235,1)'); g.addColorStop(0.35, 'rgba(215,220,235,0.75)');
-  g.addColorStop(0.7, 'rgba(215,220,235,0.22)'); g.addColorStop(1, 'rgba(215,220,235,0)');
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.45, 'rgba(250,252,255,0.85)');
+  g.addColorStop(0.75, 'rgba(245,248,255,0.25)'); g.addColorStop(1, 'rgba(245,248,255,0)');
   x.fillStyle = g; x.fillRect(0, 0, 32, 32);
   return SPRITE;
 }
@@ -80,7 +82,7 @@ function accumulation(env, P, W, H) {
     const vary = 0.55 + 0.9 * (0.6 * noise1(seed, ex / 9) + 0.4 * hash(seed, ex, ey));
     const th = want * sc * vary * flat;
     if (th < 0.25) continue;
-    x.fillStyle = rgba([196, 204, 222], clamp(0.25 + th * 0.25, 0, 0.8));
+    x.fillStyle = rgba([232, 238, 250], clamp(0.3 + th * 0.25, 0, 0.85));
     x.fillRect(ex, ey - th * 0.7, 1, th);
   }
   P.accCanvas = c; P.accDepth = want;
@@ -89,29 +91,26 @@ function accumulation(env, P, W, H) {
 
 function drawSnow(c, env, P, W, H, t) {
   const lights = cssLights(env).filter(L => L.I > 0.05).slice(0, 5), tone = skyTone(env);
-  // a faint veil, and burst light scattered by the falling snow
-  c.fillStyle = rgba(tone.haze.map(v => v * 1.2), 0.05); c.fillRect(0, 0, W, H);
-  for (const L of lights) {
-    const r = L.r * 1.2, a = Math.min(0.2, 0.06 * L.I), g = c.createRadialGradient(L.x, L.y, 0, L.x, L.y, r);
-    g.addColorStop(0, rgba(L.col, a)); g.addColorStop(1, rgba(L.col, 0));
-    c.fillStyle = g; c.fillRect(L.x - r, L.y - r, 2 * r, 2 * r);
-  }
   const acc = accumulation(env, P, W, H);
   if (acc) c.drawImage(acc, 0, 0);
-  // far flakes: tiny squares in one path; near ones: soft sprites (out of focus nearer than FOCUS)
-  const spr = sprite(), small = [], big = [];
+  // three layers: far specks and middle dots in two paths, near flakes as small soft sprites (bokeh)
+  const spr = sprite(), far = [], mid = [], near = [];
   for (const f of P.flakes) {
-    const r = 0.01 * PXM(env, f.z) * f.sz;                 // a ~1 cm flake
-    (r < 1.1 ? small : big).push([f, r]);
+    const r = 0.006 * PXM(env, f.z) * f.sz;                // a ~1 cm flake (radius in px)
+    (f.z < FOCUS * 2 ? near : r < 0.7 ? far : mid).push([f, r]);
   }
-  c.fillStyle = 'rgba(205,212,228,0.6)';
+  c.fillStyle = 'rgba(240,244,255,0.45)';
   c.beginPath();
-  for (const [f, r] of small) { const s = Math.max(1.3, r * 1.8); c.rect(f.x - s / 2, f.y - s / 2, s, s); }
+  for (const [f] of far) c.rect(f.x - 0.5, f.y - 0.5, 1, 1);
   c.fill();
-  for (const [f, r] of big) {
-    const blur = f.z < FOCUS ? (FOCUS - f.z) / FOCUS : 0, d = (r * (1 + 2 * blur) + 0.8) * 2.4;
-    const tumble = 0.75 + 0.25 * Math.sin(t * (2 + f.sz * 3) + f.ph);  // a turning flake glints
-    c.globalAlpha = clamp(0.7 * tumble * (1 - 0.8 * blur), 0.06, 1);  // out of focus: spread and faint
+  c.fillStyle = 'rgba(248,250,255,0.8)';
+  c.beginPath();
+  for (const [f, r] of mid) { const s = Math.min(1.6, Math.max(0.7, r)); c.moveTo(f.x + s, f.y); c.arc(f.x, f.y, s, 0, 6.283); }
+  c.fill();
+  for (const [f, r] of near) {
+    const soft = f.z < FOCUS ? (FOCUS - f.z) / FOCUS : 0, d = Math.min(7, Math.max(2.4, r * 2.6 * (1 + 0.6 * soft)));
+    const tumble = 0.8 + 0.2 * Math.sin(t * (2 + f.sz * 3) + f.ph);  // a turning flake glints
+    c.globalAlpha = clamp(0.95 * tumble * (1 - 0.35 * soft), 0.3, 1);
     c.drawImage(spr, f.x - d / 2, f.y - d / 2, d, d);
   }
   c.globalAlpha = 1;
@@ -119,12 +118,12 @@ function drawSnow(c, env, P, W, H, t) {
   for (const L of lights) {
     const r2 = (L.r * 0.8) ** 2, a = Math.min(0.9, 0.45 * L.I);
     if (a < 0.04) continue;
-    c.fillStyle = rgba(L.col.map(v => Math.min(255, v * 0.8 + 70)), a);
+    c.fillStyle = rgba(L.col.map(v => Math.min(255, v * 0.7 + 90)), a);   // warm/coloured by the burst
     c.beginPath();
     for (const f of P.flakes) {
       const dx = f.x - L.x, dy = f.y - L.y;
-      if (f.z < FOCUS || dx * dx + dy * dy > r2) continue;      // (blurred near flakes stay soft)
-      const s = Math.max(0.7, 0.01 * PXM(env, f.z) * f.sz * 1.2);
+      if (dx * dx + dy * dy > r2) continue;
+      const s = Math.min(2.5, Math.max(0.7, 0.006 * PXM(env, f.z) * f.sz * 1.3));
       c.moveTo(f.x + s, f.y); c.arc(f.x, f.y, s, 0, 6.283);
     }
     c.fill();

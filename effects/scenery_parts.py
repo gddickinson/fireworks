@@ -364,7 +364,7 @@ def water(c: Layer, m: Layer, W, H, wl, seed, tint=(8, 14, 28), reflect=0.55) ->
     g = vgrad(wl, H, [(0, rgb(*(v * 1.6 for v in tint))), (1, rgb(*(v * 0.5 for v in tint)))])
     c.p.fillRect(QRectF(0, wl, W, H - wl), QBrush(g))
     dst = c.array()
-    strip = max(1, jround(H / 400))
+    strip = max(1, jround(H / 700))
     xs = np.arange(W, dtype=np.float64)
     y = wl
     while y < H:
@@ -372,7 +372,7 @@ def water(c: Layer, m: Layer, W, H, wl, seed, tint=(8, 14, 28), reflect=0.55) ->
         sy = wl - d * 0.85 - 1                                  # mirrored row (slightly compressed)
         if sy < 0:
             break
-        off = float((fbm2(seed, 0.3, d * 0.08, 3) - 0.5) * (1 + d * 0.03) + math.sin(d * 0.9) * (0.3 + d * 0.006))
+        off = float((fbm2(seed, 0.3, d * 0.05, 3) - 0.5) * (1 + d * 0.03) + math.sin(d * 0.3) * (0.2 + d * 0.004))  # smooth
         smear = min(sy, 1 + d * 0.35)                           # vertical smear grows away from the shore line
         alpha = reflect * max(0.25, 1 - d / (H - wl) * 0.6)
         a = max(0, min(top - 1, int(sy - smear)))

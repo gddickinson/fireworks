@@ -98,7 +98,7 @@ export class RealView {
   env() {
     return { sim: this.sim, cam: this.cam, cssW: this.cssW, cssH: this.cssH, k: this.cssW / Math.max(1, this.cam.W),
       lights: this.lightsNow || [], time: this.sim.time, wind: this.sim.wind, scenery: this.scenery, seed: this.seed,
-      reduced: this.reduced, quality: this.quality };
+      reduced: this.reduced, quality: this.quality, intensity: this.weatherIntensity ?? 1 };
   }
   // Settings from the panel's Show (read every frame; they apply to new shells).
   sync() {
@@ -142,12 +142,12 @@ export class RealView {
     this.lightsNow = lights;
     const env = this.env();
     this.fx.resize(env);
-    const { sky, over: weather } = this.fx.render(env);
+    const { sky, over: weather, veil, scatter } = this.fx.render(env);
     this.expo = (this.expo ?? 1) * 0.9 + 0.1 / (1 + 0.06 * total);   // eye/camera adapting to a bright finale
     const amb = S.name === 'Cityscape' ? [0.018, 0.012, 0.01] : [0.006, 0.007, 0.011];
     return { parts: this.parts, n, puffs: this.atmos.screenPuffs(cam, amb), lights,
       flash: this.reduced ? 0 : Math.min(3, this.atmos.flash), time: t, persist: this.reduced ? 0.55 : 0.8,
-      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather, sky,
+      exposure: this.expo, bloom: this.bloom ?? 0.75, grain: this.capturing ? 0 : 0.022, weather, sky, veil, scatter,
       ...this.cameraState(t) };  // no grain in exports (GIFs compress)
   }
   // Camera options: handheld sway (smooth, small, deterministic in time) and the long-exposure photo mode, where the

@@ -149,9 +149,9 @@ def _change(stars, rec):
 
 
 def _ring(sim, s, n, speed, c):
-    """A ring in a plane tilted by a random angle towards the viewer and turned about the vertical."""
+    """A ring roughly facing the viewer: tilted back by 9-52 degrees and turned by up to 40 degrees (never edge-on)."""
     R = sim.rand
-    tilt, turn = R.uniform(0.3, 1.3), R.uniform(0.0, 2.0 * math.pi)
+    tilt, turn = R.uniform(0.15, 0.9), R.uniform(-0.7, 0.7)   # never near edge-on: a ring, not a line
     life = R.uniform(1.6, 2.0)
     ct, st_, cu, su = math.cos(tilt), math.sin(tilt), math.cos(turn), math.sin(turn)
     for i in range(n):

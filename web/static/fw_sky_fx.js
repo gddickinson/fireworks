@@ -115,11 +115,13 @@ function meteors(env) {
         for (const m of st.list) {
           const p = m.age / m.life, a = Math.sin(Math.PI * p) * m.b * k, hx = m.x + m.vx * m.age, hy = m.y + m.vy * m.age;
           const v = Math.hypot(m.vx, m.vy), tx = hx - m.vx / v * m.len, ty = hy - m.vy / v * m.len;
-          const g = l.createLinearGradient(tx, ty, hx, hy), col = m.green ? '190,255,210' : '235,240,255';
-          g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(1, `rgba(${col},${a})`);
-          l.strokeStyle = g; l.lineWidth = 1.4; l.lineCap = 'round';
-          l.beginPath(); l.moveTo(tx, ty); l.lineTo(hx, hy); l.stroke();
-          l.globalAlpha = a; l.drawImage(softSprite([235, 240, 255]), hx - 4, hy - 4, 8, 8); l.globalAlpha = 1;
+          // one continuous, tapering streak: bright head, fading tail (a thin wedge, no dots)
+          const g = l.createLinearGradient(tx, ty, hx, hy), col = m.green ? '215,250,235' : '238,243,255';
+          g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(0.7, `rgba(${col},${a * 0.45})`); g.addColorStop(1, `rgba(${col},${a})`);
+          const nx = -m.vy / v, ny = m.vx / v, w = 0.9;                     // half-width at the head (px)
+          l.fillStyle = g; l.beginPath();
+          l.moveTo(tx, ty); l.lineTo(hx + nx * w, hy + ny * w); l.lineTo(hx - nx * w, hy - ny * w); l.closePath(); l.fill();
+          l.globalAlpha = a * 0.8; l.drawImage(softSprite([240, 245, 255]), hx - 2.5, hy - 2.5, 5, 5); l.globalAlpha = 1;
         }
       });
     },

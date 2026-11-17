@@ -105,7 +105,7 @@ export const WATER_SCENES = {
     darkSky(S, c, wl, [150, 96, 66], { low: [40, 30, 46], glowH: 0.48, sunX: 0.85 });
     starry(S, c, seed, wl, { n: 0.15, milky: 0 });
     skyline(c, m, W, H, wl, seed + 1, { far: true, S, sc: sc * 1.2 });
-    const crowns = [[255, 220, 160], [140, 200, 255], [255, 120, 200], [255, 200, 90], [150, 255, 200], [255, 255, 240]];
+    const crowns = [[255, 232, 200], [236, 240, 255], [255, 222, 178], [245, 238, 228], null, null];   // soft whites, some unlit
     const n = Math.max(3, Math.round(W / (190 * sc)));
     for (let i = 0; i < n; i++) {                             // the tall towers with floodlit crowns
       const x = W * (i + 0.2 + rnd() * 0.6) / n, h = Math.min(Math.min(H, W * 1.1) * (0.26 + rnd() * 0.2), wl - H * 0.12), w = (34 + rnd() * 24) * sc;

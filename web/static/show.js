@@ -107,11 +107,16 @@ route('show', async (args, query) => {
 function cameraGroup(host, V, st, el) {
   const d = document.createElement('details');
   d.className = 'grp';
-  d.innerHTML = `<summary>Camera</summary><div class="body">
+  d.innerHTML = `<summary>Camera &amp; weather</summary><div class="body">
+    <label for="wxi">Rain / snow amount <b id="wxiv">${Math.round((st.wx_intensity ?? 1) * 100)}%</b></label>
+    <input type="range" id="wxi" min="0.3" max="2.5" step="0.1" value="${st.wx_intensity ?? 1}">
     <label class="chk"><input type="checkbox" id="sway"${st.sway ? ' checked' : ''}> Handheld (slight sway)</label>
     <div class="btns"><button class="alt" id="photo">Long-exposure photo (6 s)</button></div>
     <p class="small mute" id="photonote">Like a camera on a tripod with the shutter open: trails build up into one picture, then it pauses (Save PNG keeps it, Resume goes on).</p></div>`;
   host.appendChild(d);
+  const wxi = d.querySelector('#wxi');
+  V.weatherIntensity = st.wx_intensity ?? 1;
+  wxi.oninput = () => { st.wx_intensity = +wxi.value; V.weatherIntensity = st.wx_intensity; d.querySelector('#wxiv').textContent = Math.round(st.wx_intensity * 100) + '%'; };
   const sway = d.querySelector('#sway');
   V.sway = !!st.sway;
   sway.onchange = () => { st.sway = sway.checked; V.sway = st.sway; };

@@ -159,6 +159,8 @@ export class GLRenderer {
       gl.uniform1f(u.bloom, F.bloom); gl.uniform1f(u.grain, F.grain); gl.uniform1f(u.useWx, F.weather ? 1 : 0);
       gl.uniform1f(u.sky, 1); gl.uniform1f(u.fwGain, F.fwGain ?? 1);
       const c = F.cam || [0, 0, 1]; gl.uniform3f(u.cam, c[0], c[1], c[2]);
+      const v = F.veil || [0, 0, 0, 0, 0];
+      gl.uniform3f(u.veilCol, v[0] / 255, v[1] / 255, v[2] / 255); gl.uniform2f(u.veilA, v[3], v[4]); gl.uniform1f(u.scatter, F.scatter || 0);
     });
   }
 }

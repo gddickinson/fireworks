@@ -90,13 +90,32 @@ export function townRow(S, c, m, x0, x1, base, sc, rnd, haze = 0.4) {
 }
 
 // Floodlit castle centred at cx on `base` (px): curtain wall with crenellations, round towers with conical roofs,
-// a tall keep, lit windows. Floodlights from below make the stone warm at the foot, fading upwards.
+// a tall keep, a few lit windows. Floodlights at the foot: the stone is a muted warm grey near the ground, falling
+// off with height and towards each wall's edges, with masonry courses; roofs stay dark. Its albedo lets bursts
+// brighten it; it is lit moderately so it does not dominate the frame.
 export function castle(S, c, m, cx, base, sc, rnd) {
-  const stone = (y0, y1) => { const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, rgb(...tone(S, [62, 50, 44], 0.2))); g.addColorStop(1, rgb(170, 128, 80)); return g; };
-  const roofC = rgb(...tone(S, [16, 16, 24], 0.2));
+  const lit = tone(S, [112, 92, 72], 0.15), dark = tone(S, [30, 27, 28], 0.2);
+  const stone = (y0, y1) => {
+    const g = c.createLinearGradient(0, y0, 0, y1), f = Math.min(1, Math.max(0, (base - y1) / (150 * sc)));  // higher = less light
+    g.addColorStop(0, rgb(...dark)); g.addColorStop(1, rgb(...lit.map((v, i) => v + (dark[i] - v) * f * 0.7)));
+    return g;
+  };
+  const roofC = rgb(...tone(S, [14, 14, 20], 0.2));
+  const texture = (x, y, w, h) => {                          // edges in shadow, masonry courses, uneven stones
+    const e = c.createLinearGradient(x, 0, x + w, 0);
+    e.addColorStop(0, 'rgba(0,0,0,0.45)'); e.addColorStop(0.3, 'rgba(0,0,0,0)'); e.addColorStop(0.7, 'rgba(0,0,0,0)'); e.addColorStop(1, 'rgba(0,0,0,0.5)');
+    c.fillStyle = e; c.fillRect(x, y, w, h);
+    for (let yy = y + 3 * sc; yy < y + h; yy += 3.5 * sc) {
+      c.fillStyle = 'rgba(0,0,0,0.13)'; c.fillRect(x, yy, w, 0.5 * sc);
+      for (let xx = x + rnd() * 6 * sc; xx < x + w; xx += (5 + rnd() * 5) * sc) {
+        c.fillStyle = rnd() < 0.5 ? 'rgba(255,235,210,0.05)' : 'rgba(0,0,0,0.08)'; c.fillRect(xx, yy - 3 * sc, (4 + rnd() * 4) * sc, 3 * sc);
+      }
+    }
+  };
   const block = (x, y, w, h, crenel = true) => {
-    both(c, m, stone(y, y + h), 0.6, k => k.fillRect(x, y, w, h));
-    if (crenel) for (let i = 0; i < w / (4 * sc) - 1; i += 2) both(c, m, stone(y - 3 * sc, y + h), 0.6, k => k.fillRect(x + i * 4 * sc, y - 3 * sc, 4 * sc, 3 * sc));
+    both(c, m, stone(y, y + h), 0.45, k => k.fillRect(x, y, w, h));
+    texture(x, y, w, h);
+    if (crenel) for (let i = 0; i < w / (4 * sc) - 1; i += 2) both(c, m, stone(y - 3 * sc, y), 0.45, k => k.fillRect(x + i * 4 * sc, y - 3 * sc, 4 * sc, 3 * sc));
   };
   const tower = (x, w, h, coneH) => {
     block(x, base - h, w, h, coneH === 0);
@@ -104,7 +123,7 @@ export function castle(S, c, m, cx, base, sc, rnd) {
       both(c, m, roofC, 0.25, k => poly(k, [[x - 2 * sc, base - h], [x + w / 2, base - h - coneH], [x + w + 2 * sc, base - h]]));
       c.strokeStyle = rgb(20, 20, 28); c.lineWidth = 0.8 * sc; c.beginPath(); c.moveTo(x + w / 2, base - h - coneH); c.lineTo(x + w / 2, base - h - coneH - 6 * sc); c.stroke();
     }
-    for (let i = 0; i < 3; i++) if (rnd() < 0.55) litWindow(c, x + w / 2 - 1.4 * sc, base - h + (8 + i * 14) * sc, 2.8 * sc, 5 * sc, rnd);
+    for (let i = 0; i < 3; i++) if (rnd() < 0.3) litWindow(c, x + w / 2 - 1.4 * sc, base - h + (8 + i * 14) * sc, 2.8 * sc, 5 * sc, rnd);
   };
   const W = 230 * sc;
   block(cx - W / 2, base - 42 * sc, W, 42 * sc);                 // curtain wall
@@ -115,10 +134,10 @@ export function castle(S, c, m, cx, base, sc, rnd) {
   block(cx - 30 * sc, base - 125 * sc, 56 * sc, 83 * sc);           // keep
   tower(cx + 18 * sc, 16 * sc, 150 * sc, 36 * sc);                // slender watch tower beside the keep
   tower(cx + 60 * sc, 22 * sc, 84 * sc, 0);
-  for (let f = 0; f < 3; f++) for (let i = 0; i < 4; i++) if (rnd() < 0.5) litWindow(c, cx - 24 * sc + i * 13 * sc, base - 112 * sc + f * 22 * sc, 3.2 * sc, 6 * sc, rnd);
+  for (let f = 0; f < 3; f++) for (let i = 0; i < 4; i++) if (rnd() < 0.3) litWindow(c, cx - 24 * sc + i * 13 * sc, base - 112 * sc + f * 22 * sc, 3.2 * sc, 6 * sc, rnd);
   c.fillStyle = rgb(70, 40, 25); c.beginPath(); c.arc(cx + 2 * sc, base - 12 * sc, 9 * sc, Math.PI, 0); c.fillRect(cx - 7 * sc, base - 12 * sc, 18 * sc, 12 * sc); c.fill();
   glow(c, cx + 2 * sc, base - 8 * sc, 22 * sc, [255, 170, 90], 0.25);
-  glow(c, cx, base - 60 * sc, W * 0.9, [255, 170, 100], 0.07, 0.3);   // floodlight haze around the walls
+  glow(c, cx, base - 30 * sc, W * 0.8, [255, 180, 120], 0.04, 0.3);   // faint floodlight haze at the foot
 }
 
 // Boat (side view, facing right) on the waterline y: hull, cabin, mast (sailing) and riding lights. Also used by the

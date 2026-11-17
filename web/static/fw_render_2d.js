@@ -96,6 +96,20 @@ export class Canvas2DRenderer {
     }
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
     c.drawImage(S.front, 0, 0, W, H);
+    if (F.veil) {                                             // weather haze and burst light scattered by it
+      const [r, g, b, a0, a1] = F.veil, gr = c.createLinearGradient(0, 0, 0, H);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${a0})`); gr.addColorStop(1, `rgba(${r},${g},${b},${a1})`);
+      c.fillStyle = gr; c.fillRect(0, 0, W, H);
+    }
+    if (F.scatter) {
+      c.globalCompositeOperation = 'lighter';
+      for (const L of F.lights) {
+        const r = L.r * 1.1, a = Math.min(0.25, L.I * F.scatter), gr = c.createRadialGradient(L.x, L.y, 0, L.x, L.y, r);
+        gr.addColorStop(0, `rgba(${L.col[0]},${L.col[1]},${L.col[2]},${a})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = gr; c.fillRect(L.x - r, L.y - r, 2 * r, 2 * r);
+      }
+      c.globalCompositeOperation = 'source-over';
+    }
     if (F.weather) c.drawImage(F.weather, 0, 0, W, H);
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(this.vig, 0, 0);

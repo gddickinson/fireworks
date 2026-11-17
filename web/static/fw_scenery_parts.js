@@ -192,11 +192,11 @@ export function water(c, m, W, H, wl, seed, { tint = [8, 14, 28], reflect = 0.55
   const g = c.createLinearGradient(0, wl, 0, H);
   g.addColorStop(0, rgb(...tint.map(v => v * 1.6))); g.addColorStop(1, rgb(...tint.map(v => v * 0.5)));
   c.fillStyle = g; c.fillRect(0, wl, W, H - wl);
-  const strip = Math.max(1, Math.round(H / 400));
+  const strip = Math.max(1, Math.round(H / 700));
   for (let y = wl; y < H; y += strip) {
     const d = y - wl, sy = wl - d * 0.85 - 1;                  // mirrored row (slightly compressed)
     if (sy < 0) break;
-    const off = (fbm2(seed, 0.3, d * 0.08, 3) - 0.5) * (1 + d * 0.03) + Math.sin(d * 0.9) * (0.3 + d * 0.006);
+    const off = (fbm2(seed, 0.3, d * 0.05, 3) - 0.5) * (1 + d * 0.03) + Math.sin(d * 0.3) * (0.2 + d * 0.004);   // smooth, no row stripes
     const smear = Math.min(sy, 1 + d * 0.35);               // vertical smear grows with distance from the shore line
     c.globalAlpha = reflect * Math.max(0.25, 1 - d / (H - wl) * 0.6);
     c.drawImage(src, 0, sy - smear, W, strip + smear, off, y, W, strip);

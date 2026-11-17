@@ -66,10 +66,17 @@ uniform sampler2D back, front, mat, fw, smoke, b0, b1, b2, wx, skyfx;
 uniform vec4 L[8]; uniform vec3 LC[8]; uniform int nL;
 uniform vec2 res; uniform float wl, time, flash, exposure, bloom, grain, useWx, sky, useSky, fwGain;
 uniform vec3 cam;                                   // handheld camera: uv shift (x, y) and zoom
+uniform vec3 veilCol; uniform vec2 veilA; uniform float scatter;   // weather haze and scattered burst light
 in vec2 uv0; out vec4 o;
 vec3 lin(vec3 c) { return pow(c, vec3(2.2)); }
 vec3 rt(sampler2D t, vec2 u) { return texture(t, vec2(u.x, 1.0 - u.y)).rgb; }
 vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+// Overlay layers (8-bit canvases) are read through a 2x2 box: the browser dithers faint gradients in them, and the
+// dither pattern would otherwise show as fine lines once the dark scene is tone-mapped.
+vec4 soft(sampler2D t, vec2 u) {
+  vec2 e = 0.6 / vec2(textureSize(t, 0));
+  return 0.25 * (texture(t, u + e) + texture(t, u - e) + texture(t, u + vec2(e.x, -e.y)) + texture(t, u + vec2(-e.x, e.y)));
+}
 float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 vec3 lightAt(vec2 px) {
   vec3 s = vec3(0.0);
@@ -87,11 +94,11 @@ void main() {
                                                                      // so the static scene stays put (GIF exports)
   vec3 col = lin(texture(back, uv).rgb);
   col += lt * (m.r * 0.16 + m.b * sky * 0.018 + m.g * 0.02) + vec3(0.6, 0.65, 0.8) * min(flash, 1.5) * 0.004 * m.b;
-  if (useSky > 0.5) { vec4 sf = texture(skyfx, uv); col = col * (1.0 - sf.a) + lin(sf.rgb) * sf.a; }  // sky effects layer
+  if (useSky > 0.5) { vec4 sf = soft(skyfx, uv); col = col * (1.0 - sf.a) + lin(sf.rgb) * sf.a; }  // sky effects layer
   vec3 f = rt(fw, uv) * exposure * fwGain;
   if (m.g > 0.5 && uv.y > wl) {                                       // reflections on water
     float d = uv.y - wl;
-    vec2 r = vec2(uv.x + (sin(uv.y * 900.0 + time * 2.1) * 0.6 + sin(uv.y * 310.0 - time * 1.3)) * d * 0.012,
+    vec2 r = vec2(uv.x + (sin(uv.y * 260.0 + time * 1.7) * 0.5 + sin(uv.y * 113.0 - time * 1.1 + uv.x * 9.0)) * d * 0.008,
                   wl - d * 0.85);
     vec3 refl = rt(fw, r) * 0.9 + rt(b0, r) * 0.6 + rt(b1, r) * 0.5;
     col += refl * exposure * m.g * (0.35 + 0.4 * d / (1.0 - wl));
@@ -102,7 +109,8 @@ void main() {
   vec4 fr = texture(front, uv);
   vec3 fl = lin(fr.rgb) + lt * m.r * 0.12;
   col = mix(col, fl, fr.a);
-  if (useWx > 0.5) { vec4 w = texture(wx, uv); col = mix(col, lin(w.rgb), w.a); }
+  col = mix(col, lin(veilCol), mix(veilA.x, veilA.y, uv.y)) + lt * scatter;
+  if (useWx > 0.5) { vec4 w = soft(wx, uv); col = mix(col, lin(w.rgb), w.a); }
   col += (rt(b0, uv) * 0.55 + rt(b1, uv) * 0.45 + rt(b2, uv) * 0.5) * bloom * exposure * fwGain;
   col = aces(col);
   col = pow(col, vec3(1.0 / 2.2));

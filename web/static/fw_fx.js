@@ -3,7 +3,8 @@
 // that the renderers composite every frame:
 //   sky  - over the scenery's back layer, behind the fireworks (premultiplied "over": moon, aurora, lanterns, boats)
 //   over - over everything (alpha "over": rain, snow, fog, cloud deck; fog dims the sparks behind it)
-// Plug-in interface (all optional): resize(env) · update(dt, env) · drawSky(ctx, env) · drawOver(ctx, env)
+// Plug-in interface (all optional): resize(env) · update(dt, env) · drawSky(ctx, env) · drawOver(ctx, env) ·
+// atmosphere(env) -> { veil: [r, g, b, aTop, aBottom], scatter } (haze and scattered burst light, drawn by the renderer)
 // env: { sim, cam, cssW, cssH, k (CSS px per device px), lights (Atmos.screenLights, device px), time, wind (m/s),
 //        scenery, seed, reduced, quality }. Plug-ins must be deterministic given env.seed and the frame sequence.
 export const WEATHER = {};    // name -> { label, make(env) }
@@ -27,16 +28,20 @@ export class FxLayers {
     }
   }
   update(dt, env) { for (const p of this.plugins) p.update?.(dt, env); }
-  // Draws the layers; returns { sky, over } (null where no plug-in drew).
+  // Draws the layers; returns { sky, over, veil, scatter } (canvases null where no plug-in drew; veil
+  // [r, g, b, alpha at the top, alpha at the bottom] and scatter (share of burst light scattered by the air) from the
+  // plug-ins' atmosphere(env), drawn by the renderer itself in full precision).
   render(env) {
-    let sky = null, over = null;
+    let sky = null, over = null, veil = null, scatter = 0;
     const s = this.sky.getContext('2d'), o = this.over.getContext('2d');
     s.clearRect(0, 0, this.w, this.h); o.clearRect(0, 0, this.w, this.h);
     for (const p of this.plugins) {
       if (p.drawSky) { s.save(); p.drawSky(s, env); s.restore(); sky = this.sky; }
       if (p.drawOver) { o.save(); p.drawOver(o, env); o.restore(); over = this.over; }
+      const a = p.atmosphere?.(env);
+      if (a) { if (a.veil && (!veil || a.veil[4] > veil[4])) veil = a.veil; scatter = Math.max(scatter, a.scatter || 0); }
     }
-    return { sky, over };
+    return { sky, over, veil, scatter };
   }
 }
 

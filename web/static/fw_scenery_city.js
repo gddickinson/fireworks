@@ -84,15 +84,15 @@ export function streetLights(c, W, H, wl, seed, sc = H / 800) {
   }
 }
 
-// A slender tower with a floodlit crown: a tapering shaft, a glowing pyramidal or stepped crown, a mast with a
-// beacon. Generic shapes only (no real buildings).
+// A slender tower with a crown: a tapering shaft, a pyramidal or stepped top (softly floodlit in a pale tone, or
+// unlit when col is null), a mast with a red aviation beacon. Generic shapes only (no real buildings).
 export function crownTower(S, c, m, x, base, w, h, rnd, sc, col) {
   const body = tone(S, [8, 9, 15], 0.35), top = base - h;
   const g = c.createLinearGradient(x, 0, x + w, 0);           // a faint lit edge on one side
   g.addColorStop(0, rgb(...body.map(v => v * 1.6))); g.addColorStop(0.25, rgb(...body)); g.addColorStop(1, rgb(...body.map(v => v * 0.8)));
   c.fillStyle = g; c.fillRect(x, top, w, h); m.fillStyle = mat(0.35); m.fillRect(x, top, w, h);
   windows(c, x, top + 4 * sc, w, base, rnd, false, sc);
-  c.fillStyle = rgb(...col, 0.25); c.fillRect(x + w * 0.15, top, 1.2 * sc, h * 0.7); c.fillRect(x + w * 0.85 - 1.2 * sc, top, 1.2 * sc, h * 0.7);
+  if (col) { c.fillStyle = rgb(...col, 0.1); c.fillRect(x + w * 0.15, top, 1.2 * sc, h * 0.7); c.fillRect(x + w * 0.85 - 1.2 * sc, top, 1.2 * sc, h * 0.7); }
   const kind = rnd(), ch = h * (0.1 + rnd() * 0.06);
   c.save();
   if (kind < 0.5) {                                           // pyramid crown, lit from below
@@ -103,13 +103,15 @@ export function crownTower(S, c, m, x, base, w, h, rnd, sc, col) {
     c.lineTo(x + w - w * 0.48, top - ch); for (let i = 3; i >= 0; i--) { const ix = w * 0.12 * (i + 1), y = top - ch * (i + 1) / 4; c.lineTo(x + w - ix, y); c.lineTo(x + w - ix + w * 0.12, y); }
     c.lineTo(x + w, top); c.closePath();
   }
-  const cg = c.createLinearGradient(0, top - ch, 0, top);
-  cg.addColorStop(0, rgb(...col, 0.35)); cg.addColorStop(1, rgb(...col, 0.95));
-  c.fillStyle = cg; c.fill(); c.clip();
-  c.fillStyle = rgb(0, 0, 0, 0.35); for (let i = 1; i < 6; i++) c.fillRect(x + w * i / 6 - sc * 0.4, top - ch, sc * 0.8, ch);
+  if (col) {                                                  // a softly floodlit top: light from below, fading up
+    const cg = c.createLinearGradient(0, top - ch, 0, top);
+    cg.addColorStop(0, rgb(...body.map(v => v * 1.5))); cg.addColorStop(1, rgb(...col.map((v, i) => body[i] + (v - body[i]) * 0.4)));
+    c.fillStyle = cg; c.fill(); c.clip();
+    c.fillStyle = rgb(0, 0, 0, 0.3); for (let i = 1; i < 6; i++) c.fillRect(x + w * i / 6 - sc * 0.4, top - ch, sc * 0.8, ch);
+  } else { c.fillStyle = rgb(...body.map(v => v * 1.3)); c.fill(); }   // unlit top: a dark silhouette
   c.restore();
   m.fillStyle = mat(0.5); m.fillRect(x, top - ch, w, ch);
-  glow(c, x + w / 2, top - ch * 0.4, w * 1.4, col, 0.22, 0.2);
+  if (col) glow(c, x + w / 2, top - ch * 0.3, w * 1.1, col, 0.08, 0.2);
   const mh = h * 0.12;                                        // mast with an aviation light
   c.fillStyle = rgb(...body.map(v => v * 1.8)); c.fillRect(x + w / 2 - sc * 0.6, top - ch - mh, 1.2 * sc, mh);
   S.beacons.push([x + w / 2, top - ch - mh, 1.8 * sc]);

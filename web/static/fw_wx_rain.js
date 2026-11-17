@@ -31,7 +31,7 @@ export function makeRain(env, opts = {}) {
   }
   function fill(env) {                                        // keep each layer at its budget (quality may change)
     for (const L of layers) {
-      const n = budget(env, L.n * heavy, L.n * heavy * 2);
+      const n = budget(env, L.n * heavy * (env.intensity ?? 1), L.n * heavy * 2.5);   // env.intensity: panel slider
       if (L.drops.length > n) L.drops.length = n;
       while (L.drops.length < n) L.drops.push(newDrop(L, false));
     }
@@ -80,6 +80,8 @@ export function makeRain(env, opts = {}) {
     },
     stats() { return { count: layers.reduce((a, L) => a + L.drops.length, 0), splashes: splashes.length, vx: vxMean }; },
     drawOver(c, env) { drawRain(c, env, P, { W, H, wl, heavy }); },
+    // haze veil (thicker towards the bottom) and the share of burst light scattered by the rain, for the renderer
+    atmosphere(env) { const v = 0.05 + 0.04 * heavy; return { veil: [...skyTone(env).haze, v * 0.6, v * 1.4], scatter: 0.05 * heavy }; },
   };
   P.resize(env);
   return P;
@@ -88,17 +90,8 @@ export function makeRain(env, opts = {}) {
 function drawRain(c, env, P, { W, H, wl, heavy }) {
   const lights = cssLights(env).filter(L => L.I > 0.05).slice(0, 5), tone = skyTone(env);
   const flash = clamp(P.shared.flash || 0, 0, 1.5), wind = env.wind ?? 0, sc = H / 800;
-  // haze: a thin veil, thicker towards the horizon, brightened around the bursts (light scattered by the rain)
-  const hz = (env.scenery?.horizon ?? 0.85) * H, veil = 0.05 + 0.04 * heavy;
-  const g = c.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, rgba(tone.haze, veil * 0.6)); g.addColorStop(clamp(hz / H, 0.1, 0.95), rgba(tone.haze, veil * 1.6));
-  g.addColorStop(1, rgba(tone.haze, veil));
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-  for (const L of lights) {
-    const r = L.r * 1.1, a = Math.min(0.22, 0.06 * L.I * heavy), gr = c.createRadialGradient(L.x, L.y, 0, L.x, L.y, r);
-    gr.addColorStop(0, rgba(L.col, a)); gr.addColorStop(1, rgba(L.col, 0));
-    c.fillStyle = gr; c.fillRect(L.x - r, L.y - r, 2 * r, 2 * r);
-  }
+  // (the haze veil and the burst light scattered by the rain are drawn by the renderer: atmosphere() below, because a
+  // faint full-screen gradient in an 8-bit overlay shows dithering lines once composited)
   // streaks, far to near; the streak is the drop's path during the shutter time
   c.lineCap = 'round';
   for (let li = P.layers.length - 1; li >= 0; li--) {
@@ -149,8 +142,9 @@ function drawRain(c, env, P, { W, H, wl, heavy }) {
       if (best > 0.08) col = col.map((v, i) => v + (lit[i] - v) * Math.min(0.8, best));
     }
     if (s.ring) {
-      const rx = (2 + 13 * t) * s.s * sc * 1.4, ry = rx * (0.12 + 0.22 * s.s);
-      c.strokeStyle = rgba(col, 0.5 * fadeA * (0.5 + s.s));
+      const rx = (1.5 + 9 * t) * s.s * sc * 1.2, ry = rx * (0.1 + 0.18 * s.s);   // subtle rings
+      c.lineWidth = 0.7;
+      c.strokeStyle = rgba(col, 0.22 * fadeA * (0.5 + s.s));
       c.beginPath(); c.ellipse(s.x, s.y, rx, ry, 0, 0, 6.283); c.stroke();
     } else {
       const h = (2 + 5 * Math.sin(t * Math.PI)) * s.s * sc, w = (1.5 + 4 * t) * s.s * sc;
