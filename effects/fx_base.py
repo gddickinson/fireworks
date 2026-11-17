@@ -36,7 +36,8 @@ class FxEnv:
     """What a plug-in sees each frame (web env): W, H - the view in px (the web's cssW, cssH); scenery - an
     effects.scenery.Scenery (its images and positions are in scenery px, `k` view px per scenery px) or None;
     lights - the strongest burst lights [(x, y, r, I, (r, g, b))] in view px (RealShow.screen_lights);
-    time - sim time (s); wind - m/s (+x, gusty); seed - the show's seed; reduced - calmer motion; quality 0..1."""
+    time - sim time (s); wind - m/s (+x, gusty); seed - the show's seed; reduced - calmer motion; quality 0..1;
+    intensity - the rain / snow amount (panel slider, 1 = normal)."""
     W: int
     H: int
     scenery: object = None
@@ -46,6 +47,7 @@ class FxEnv:
     seed: int = 7
     reduced: bool = False
     quality: float = 1.0
+    intensity: float = 1.0
 
     @property
     def k(self) -> float:

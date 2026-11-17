@@ -46,7 +46,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `gui/text_points.py` | Message text → star points (QPainterPath.addText, staggered grid, rainbow) for `Director.queue_messages` | `text_points()`, `message()`, `clean_text()` |
 | `gui/export.py` | File menu: frame as PNG, 5 s GIF at a fixed time step (optional Pillow) | `save_frame()`, `gif_frames()`, `export_gif()` |
 | `gui/controls.py` | Control panel (signals) built from `ui_specs`; Show group: renderer, scenery, lift time, shell type, finale, message | `ControlPanel` |
-| `gui/controls_scene.py` | Show group additions: time of day, sky effects, ground effects + device + Fire; Background/Weather lists (realistic-only scenes and weathers with Realistic renderer + scenery); their QSettings | `add_scene_controls`, `update_scene_lists`, `load_scene_settings` |
+| `gui/controls_scene.py` | Show group additions: time of day, sky effects, Rain / snow amount slider (`FxEnv.intensity`), ground effects + device + Fire; Background/Weather lists (realistic-only scenes and weathers with Realistic renderer + scenery); their QSettings | `add_scene_controls`, `update_scene_lists`, `load_scene_settings` |
 | `gui/main_window.py` | Main window, detachable tabs, menus (incl. PNG/GIF export), QSettings, signal wiring | `FireworksApp`, `DetachableTabWidget` |
 | `utils/` | Colour (`ColorUtils.random_color`), math, physics, timing helpers | `ColorUtils`, `MathUtils`, `PhysicsUtils`, `TimeUtils` |
 | `standalone/fireworks_app.py` | Older single-file version | — |

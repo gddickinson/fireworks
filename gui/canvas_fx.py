@@ -25,6 +25,7 @@ class FxMixin:
     background_name = None
     sky_fx: tuple = ()
     ground_on = False
+    weather_intensity = 1.0
     _fx = None
     _fx_key = None
 
@@ -38,6 +39,10 @@ class FxMixin:
         """Keys of effects.fx_base.SKY_FX to show (moon, aurora, meteors, lanterns), in a fixed order."""
         keys = set(keys or ())
         self.sky_fx = tuple(k for k in SKY_FX if k in keys)
+
+    def set_weather_intensity(self, amount: float) -> None:
+        """Rain / snow amount of the realistic weather (1 = normal; the plug-ins refill to it each step)."""
+        self.weather_intensity = max(0.0, float(amount))
 
     def set_ground_effects(self, on: bool) -> None:
         self.ground_on = bool(on)
@@ -65,7 +70,7 @@ class FxMixin:
     def fx_env(self, W: int, H: int) -> FxEnv:
         real = self._ensure_real()
         return FxEnv(int(W), int(H), self._scenery, real.screen_lights(W, H, 8), real.sim.time, real.sim.wind,
-                     real.seed)
+                     real.seed, intensity=self.weather_intensity)
 
     def fx_layers(self, W: int, H: int):
         """The plug-in layers for the current scenery and choices (None without realistic scenery)."""

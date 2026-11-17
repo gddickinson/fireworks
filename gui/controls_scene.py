@@ -1,10 +1,12 @@
 """Scene controls of the desktop control panel (gui/controls.py, Show group) for the realistic renderer with realistic
 scenery: time of day, sky effects, ground devices; and the Background / Weather combos' lists, which offer the
 realistic-only scenes (ui_specs.REAL_BACKGROUNDS) and weathers (ui_specs.REAL_WEATHER) only when the Realistic
-renderer and Realistic scenery are both chosen (otherwise the classic ui_specs.BACKGROUNDS / WEATHER)."""
+renderer and Realistic scenery are both chosen (otherwise the classic ui_specs.BACKGROUNDS / WEATHER); and the
+Rain / snow amount slider (ui_specs.WX_INTENSITY, the web's env.intensity) for the realistic weather."""
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QGridLayout, QLabel, QPushButton, QWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QGridLayout, QLabel, QPushButton, QSlider, QWidget
 
 import ui_specs as U
 
@@ -36,16 +38,38 @@ def add_scene_controls(panel, layout) -> None:
     panel.fire_button = QPushButton("Fire")
     panel.fire_button.clicked.connect(lambda: panel.ground_fire_requested.emit(panel.ground_device()))
 
+    spec = U.WX_INTENSITY
+    panel.wx_slider = QSlider(Qt.Orientation.Horizontal)
+    panel.wx_slider.setRange(spec.lo, spec.hi)
+    panel.wx_slider.setValue(spec.default)
+    panel.wx_slider.setToolTip("How much rain or snow falls with the realistic weather")
+    panel.wx_label = QLabel()
+    panel.wx_slider.valueChanged.connect(lambda v: _wx_changed(panel, v))
+    _wx_changed(panel, spec.default, emit=False)
+
     layout.addWidget(QLabel("Time of day:"))
     layout.addWidget(panel.time_combo)
     layout.addWidget(QLabel("Sky effects:"))
     layout.addWidget(sky)
+    layout.addWidget(panel.wx_label)
+    layout.addWidget(panel.wx_slider)
     layout.addWidget(panel.ground_check)
     layout.addWidget(panel.device_combo)
     layout.addWidget(panel.fire_button)
 
     panel.renderer_combo.currentTextChanged.connect(lambda _t: update_scene_lists(panel))
     panel.scenery_combo.currentTextChanged.connect(lambda _t: update_scene_lists(panel))
+
+
+def weather_intensity(panel) -> float:
+    return panel.wx_slider.value() * U.WX_INTENSITY.scale
+
+
+def _wx_changed(panel, value: int, emit: bool = True) -> None:
+    amount = value * U.WX_INTENSITY.scale
+    panel.wx_label.setText(f"{U.WX_INTENSITY.label}: {round(amount * 100)}%")
+    if emit:
+        panel.weather_intensity_changed.emit(amount)
 
 
 def realistic_scenes(panel) -> bool:
@@ -70,7 +94,7 @@ def update_scene_lists(panel) -> None:
     real = realistic_scenes(panel)
     _set_items(panel.background_combo, U.REAL_BACKGROUNDS if real else U.BACKGROUNDS, U.BACKGROUNDS[0])
     _set_items(panel.weather_combo, U.REAL_WEATHER if real else U.WEATHER, "None")
-    for w in [panel.time_combo, *panel.sky_checks.values()]:
+    for w in [panel.time_combo, *panel.sky_checks.values(), panel.wx_slider]:
         w.setEnabled(real)
     on = panel.renderer_combo.currentText() == "Realistic"
     for w in (panel.ground_check, panel.device_combo, panel.fire_button):
@@ -87,7 +111,8 @@ def ground_device(panel) -> str:
 
 def scene_values(panel) -> dict:
     return {"time_of_day": panel.time_combo.currentText(), "sky_effects": ",".join(sky_effects(panel)),
-            "ground": panel.ground_check.isChecked(), "ground_device": ground_device(panel)}
+            "ground": panel.ground_check.isChecked(), "ground_device": ground_device(panel),
+            "wx_intensity": weather_intensity(panel)}
 
 
 def reset_scene_controls(panel) -> None:
@@ -96,6 +121,7 @@ def reset_scene_controls(panel) -> None:
         box.setChecked(False)
     panel.ground_check.setChecked(False)
     panel.device_combo.setCurrentIndex(0)
+    panel.wx_slider.setValue(U.WX_INTENSITY.default)
 
 
 def load_scene_settings(panel, settings) -> None:
@@ -112,6 +138,10 @@ def load_scene_settings(panel, settings) -> None:
             box.setChecked(key in on)
     if settings.contains("ground"):
         panel.ground_check.setChecked(settings.value("ground", type=bool))
+    if settings.contains("wx_intensity"):
+        spec = U.WX_INTENSITY
+        v = round(float(settings.value("wx_intensity")) / spec.scale)
+        panel.wx_slider.setValue(max(spec.lo, min(spec.hi, v)))
     if settings.contains("ground_device"):
         dev = str(settings.value("ground_device"))
         if dev in U.GROUND_DEVICES:

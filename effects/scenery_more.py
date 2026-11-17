@@ -157,13 +157,13 @@ def river_bridge(S, c, f, m, seed) -> None:
 
 
 def waterfront(S, c, f, m, seed) -> None:
-    """Big-city waterfront on New Year's Eve: floodlit crowns, a ferris wheel, a crowd in front."""
+    """Big-city waterfront on New Year's Eve: towers with pale floodlit or unlit crowns, a ferris wheel, a crowd in front."""
     W, H = S.W, S.H
     wl, sc, rnd = S.horizon * H, size_scale(S), prng(seed + 7)
     dark_sky(S, c, wl, (150, 96, 66), low=(40, 30, 46), glowH=0.48, sun_x=0.85)
     starry(S, c, seed, wl, n=0.15, milky=0)
     skyline(c, m, W, H, wl, seed + 1, far=True, S=S, sc=sc * 1.2)
-    crowns = [(255, 220, 160), (140, 200, 255), (255, 120, 200), (255, 200, 90), (150, 255, 200), (255, 255, 240)]
+    crowns = [(255, 232, 200), (236, 240, 255), (255, 222, 178), (245, 238, 228), None, None]   # soft whites, some unlit
     n = max(3, jround(W / (190 * sc)))
     for i in range(n):                                          # the tall towers with floodlit crowns
         x = W * (i + 0.2 + rnd() * 0.6) / n

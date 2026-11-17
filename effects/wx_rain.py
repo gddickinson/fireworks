@@ -55,7 +55,7 @@ class Rain:
     def _fill(self, env):
         R = self.R
         for L in self.layers:
-            n = budget(env, L.n * self.heavy, L.n * self.heavy * 2)
+            n = budget(env, L.n * self.heavy * getattr(env, "intensity", 1.0), L.n * self.heavy * 2.5)   # panel slider
             if len(L.x) > n:
                 L.x, L.y, L.s = L.x[:n], L.y[:n], L.s[:n]
             if len(L.x) < n:
@@ -134,7 +134,7 @@ class Rain:
         g.setColorAt(1, rgba(tone["haze"], veil))
         p.fillRect(QRectF(0, 0, W, H), QBrush(g))
         for x, y, r, I, col in lts:                           # light scattered by the rain
-            r, a = r * 1.1, min(0.22, 0.06 * I * heavy)
+            r, a = r * 1.1, min(0.11, 0.03 * I * heavy)    # gentle (web scatter 0.025)
             gr = QRadialGradient(QPointF(x, y), r)
             gr.setColorAt(0, rgba(col, a))
             gr.setColorAt(1, rgba(col, 0))
@@ -198,9 +198,9 @@ class Rain:
                     k = min(0.8, best)
                     col = [v + (lit[i] - v) * k for i, v in enumerate(col)]
             if ring:
-                rx = (2 + 13 * t) * s * sc * 1.4
-                ry = rx * (0.12 + 0.22 * s)
-                p.setPen(QPen(rgba(col, 0.5 * fade * (0.5 + s)), lw))
+                rx = (1.5 + 9 * t) * s * sc * 1.2               # subtle rings
+                ry = rx * (0.1 + 0.18 * s)
+                p.setPen(QPen(rgba(col, 0.22 * fade * (0.5 + s)), 0.7))
                 p.drawEllipse(QPointF(x, y), rx, ry)
             else:
                 h = (2 + 5 * math.sin(t * math.pi)) * s * sc

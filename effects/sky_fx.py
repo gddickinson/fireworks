@@ -12,7 +12,7 @@ import math
 
 import numpy as np
 from PyQt6.QtCore import QPointF, QRectF, Qt
-from PyQt6.QtGui import QColor, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QRadialGradient
+from PyQt6.QtGui import QColor, QImage, QLinearGradient, QPainter, QPainterPath, QRadialGradient
 
 from effects.fx_base import register_sky_fx
 from effects.fx_masks import FMT, exp_wait, horizon_px, is_dusk, masked, smooth, soft_sprite, water_px
@@ -198,15 +198,21 @@ class Meteors:
                 hx, hy = m["x"] + m["vx"] * m["age"], m["y"] + m["vy"] * m["age"]
                 v = math.hypot(m["vx"], m["vy"])
                 tx, ty = hx - m["vx"] / v * m["len"], hy - m["vy"] / v * m["len"]
-                col = (190, 255, 210) if m["green"] else (235, 240, 255)
+                # one continuous, tapering streak: bright head, fading tail (a thin wedge, no dots)
+                col = (215, 250, 235) if m["green"] else (238, 243, 255)
                 g = QLinearGradient(tx, ty, hx, hy)
                 g.setColorAt(0, _col(col, 0))
+                g.setColorAt(0.7, _col(col, a * 0.45))
                 g.setColorAt(1, _col(col, a))
-                l.setPen(QPen(g, 1.4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-                l.drawLine(QPointF(tx, ty), QPointF(hx, hy))
+                nx, ny, w = -m["vy"] / v, m["vx"] / v, 0.9          # half-width at the head (px)
+                wedge = QPainterPath(QPointF(tx, ty))
+                wedge.lineTo(hx + nx * w, hy + ny * w)
+                wedge.lineTo(hx - nx * w, hy - ny * w)
+                wedge.closeSubpath()
                 l.setPen(Qt.PenStyle.NoPen)
-                l.setOpacity(max(0.0, min(1.0, a)))
-                l.drawImage(QRectF(hx - 4, hy - 4, 8, 8), soft_sprite((235, 240, 255)))
+                l.fillPath(wedge, g)
+                l.setOpacity(max(0.0, min(1.0, a * 0.8)))
+                l.drawImage(QRectF(hx - 2.5, hy - 2.5, 5, 5), soft_sprite((240, 245, 255)))
                 l.setOpacity(1.0)
         masked(p, env, "sky", draw)
 

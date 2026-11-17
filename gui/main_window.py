@@ -278,6 +278,7 @@ class FireworksApp(QMainWindow):
         self.controls.sky_effects_changed.connect(self.canvas.set_sky_effects)
         self.controls.ground_toggled.connect(self.canvas.set_ground_effects)
         self.controls.ground_fire_requested.connect(self.canvas.fire_ground)
+        self.controls.weather_intensity_changed.connect(self.canvas.set_weather_intensity)
 
     def show_message(self, text: str):
         """Spell a message with message shells (realistic renderer)"""
@@ -304,6 +305,7 @@ class FireworksApp(QMainWindow):
         self.canvas.set_time_of_day(values['time_of_day'])
         self.canvas.set_sky_effects(self.controls.sky_effects())
         self.canvas.set_ground_effects(values['ground'])
+        self.canvas.set_weather_intensity(values['wx_intensity'])
         self.canvas.set_renderer(values['renderer'])
 
     def save_settings(self):

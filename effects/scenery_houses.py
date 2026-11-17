@@ -131,20 +131,38 @@ def town_row(S, c, m, x0, x1, base, sc, rnd, haze=0.4) -> None:
 
 def castle(S, c, m, cx, base, sc, rnd) -> None:
     """Floodlit castle centred at cx on `base`: curtain wall with crenellations, round towers with conical roofs,
-    a tall keep, lit windows; floodlights from below warm the stone at the foot."""
-    foot = tone(S, (62, 50, 44), 0.2)
+    a tall keep, a few lit windows.  Floodlights at the foot: the stone is a muted warm grey near the ground,
+    falling off with height and towards each wall's edges, with masonry courses; roofs stay dark."""
+    lit, dark = tone(S, (112, 92, 72), 0.15), tone(S, (30, 27, 28), 0.2)
 
     def stone(y0, y1):
-        return vgrad(y0, y1, [(0, rgb(*foot)), (1, rgb(170, 128, 80))])
+        f = min(1.0, max(0.0, (base - y1) / (150 * sc)))       # higher = less light
+        return vgrad(y0, y1, [(0, rgb(*dark)), (1, rgb(*(v + (d - v) * f * 0.7 for v, d in zip(lit, dark))))])
 
-    roof_c = rgb(*tone(S, (16, 16, 24), 0.2))
+    roof_c = rgb(*tone(S, (14, 14, 20), 0.2))
+
+    def texture(x, y, w, h):                                    # edges in shadow, masonry courses, uneven stones
+        e = QLinearGradient(x, 0, x + w, 0)
+        for t, a in ((0, 0.45), (0.3, 0), (0.7, 0), (1, 0.5)):
+            e.setColorAt(t, rgb(0, 0, 0, a))
+        fill_rect(c, x, y, w, h, e)
+        yy = y + 3 * sc
+        while yy < y + h:
+            fill_rect(c, x, yy, w, 0.5 * sc, rgb(0, 0, 0, 0.13))
+            xx = x + rnd() * 6 * sc
+            while xx < x + w:
+                col = rgb(255, 235, 210, 0.05) if rnd() < 0.5 else rgb(0, 0, 0, 0.08)
+                fill_rect(c, xx, yy - 3 * sc, (4 + rnd() * 4) * sc, 3 * sc, col)
+                xx += (5 + rnd() * 5) * sc
+            yy += 3.5 * sc
 
     def block(x, y, w, h, crenel=True):
-        both(c, m, stone(y, y + h), 0.6, _rect(x, y, w, h))
+        both(c, m, stone(y, y + h), 0.45, _rect(x, y, w, h))
+        texture(x, y, w, h)
         if crenel:
             i = 0
             while i < w / (4 * sc) - 1:
-                both(c, m, stone(y - 3 * sc, y + h), 0.6, _rect(x + i * 4 * sc, y - 3 * sc, 4 * sc, 3 * sc))
+                both(c, m, stone(y - 3 * sc, y), 0.45, _rect(x + i * 4 * sc, y - 3 * sc, 4 * sc, 3 * sc))
                 i += 2
 
     def tower(x, w, h, cone):
@@ -155,7 +173,7 @@ def castle(S, c, m, cx, base, sc, rnd) -> None:
             stroke(c, poly([(x + w / 2, base - h - cone), (x + w / 2, base - h - cone - 6 * sc)], close=False),
                    rgb(20, 20, 28), 0.8 * sc)
         for i in range(3):
-            if rnd() < 0.55:
+            if rnd() < 0.3:
                 lit_window(c, x + w / 2 - 1.4 * sc, base - h + (8 + i * 14) * sc, 2.8 * sc, 5 * sc, rnd)
 
     W = 230 * sc
@@ -170,14 +188,14 @@ def castle(S, c, m, cx, base, sc, rnd) -> None:
     tower(cx + 60 * sc, 22 * sc, 84 * sc, 0)
     for f in range(3):
         for i in range(4):
-            if rnd() < 0.5:
+            if rnd() < 0.3:
                 lit_window(c, cx - 24 * sc + i * 13 * sc, base - 112 * sc + f * 22 * sc, 3.2 * sc, 6 * sc, rnd)
     fill_rect(c, cx - 7 * sc, base - 12 * sc, 18 * sc, 12 * sc, rgb(70, 40, 25))   # gate
     gate = upper_half(path(), cx + 2 * sc, base - 12 * sc, 9 * sc, 9 * sc)
     gate.closeSubpath()
     fill(c, gate, rgb(70, 40, 25))
     glow(c, cx + 2 * sc, base - 8 * sc, 22 * sc, (255, 170, 90), 0.25)
-    glow(c, cx, base - 60 * sc, W * 0.9, (255, 170, 100), 0.07, 0.3)   # floodlight haze around the walls
+    glow(c, cx, base - 30 * sc, W * 0.8, (255, 180, 120), 0.04, 0.3)   # faint floodlight haze at the foot
 
 
 def boat(k, x, y, ln, sc, rnd, sail=True, colour=(12, 13, 18), lights=True) -> tuple:

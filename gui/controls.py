@@ -33,6 +33,7 @@ class ControlPanel(QWidget):
     sky_effects_changed = pyqtSignal(list)      # keys of ui_specs.SKY_EFFECTS that are on
     ground_toggled = pyqtSignal(bool)
     ground_fire_requested = pyqtSignal(str)     # models.ground_effects.DEVICES key
+    weather_intensity_changed = pyqtSignal(float)   # realistic rain/snow amount, 0.3..2.5 (1 = normal)
 
     # Pattern-specific signals
     pattern_option_signal = pyqtSignal(str, int)  # (option_name, value)

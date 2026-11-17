@@ -93,7 +93,7 @@ class TestWeatherUpdate(unittest.TestCase):
         f = P.state()
         self.assertTrue((f["x"] >= -20).all() and (f["x"] <= env.W + 20).all())
         self.assertTrue((f["y"] <= env.H + 20).all() and (f["y"] >= -30).all())
-        self.assertTrue(((f["z"] >= 1.5) & (f["z"] <= 27.5)).all())
+        self.assertTrue(((f["z"] >= 3) & (f["z"] <= 63)).all())
         self.assertGreater(P.stats()["acc"], acc0, "snow builds up")
         self.assertGreater(P.stats()["vx"], 0)
 

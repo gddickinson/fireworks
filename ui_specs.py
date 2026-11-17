@@ -48,6 +48,8 @@ LAUNCH_SPEED = SliderSpec("launch_speed", "Launch Speed", 50, 200, round(DEFAULT
 # 1.5-5 s in 0.5 s steps; the top value means real time (models.pyro.Sim.lift_time = None, about 4.5 s).
 LIFT_TIME = SliderSpec("lift_time", "Lift time", 3, 10, 6, 0.5)
 LIFT_REAL_TIME = LIFT_TIME.hi * LIFT_TIME.scale
+# Realistic weather amount (the web's "Rain / snow amount", env.intensity): 30-250 % in 10 % steps.
+WX_INTENSITY = SliderSpec("wx_intensity", "Rain / snow amount", 3, 25, 10, 0.1)
 
 SLIDERS = [PARTICLE_COUNT, PATTERN_SCALE, PATTERN_ROTATION, STAR_POINTS, SPIRAL_ARMS, GRAVITY, LAUNCH_SPEED]
 

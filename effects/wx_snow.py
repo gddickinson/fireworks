@@ -1,7 +1,7 @@
 """Realistic snow (weather plug-in, effects/fx_base.py): a port of web/static/fw_wx_snow.js.
 
-Flakes at depths from 1.5 to 27.5 m (near ones large, soft and out of focus, far ones tiny), tumbling in turbulence
-and drifting with the gusty wind; lit in the colour of nearby bursts; and a thin layer of snow slowly building up
+Many small bright flakes at depths from 3 to 63 m in three layers (far: faint specks; middle: small dots; near: slightly
+larger with a soft bokeh edge), tumbling in turbulence and drifting with the gusty wind; coloured by nearby bursts; and a thin layer of snow slowly building up
 on the top edges of the silhouettes (effects/wx_util.scene_geometry), cached as an image per depth step.
 
 update() (as the JS): each flake: depth z, px per metre m = 1.5 H / z, fall speed vf (0.6..1.4 m/s), phase ph;
@@ -22,7 +22,7 @@ from effects.fx_base import register_weather
 from effects.scenery_noise import hash as nhash, noise1, prng
 from effects.wx_util import budget, clamp, lights, noise1_v, rgba, scene_geometry, sky_tone
 
-BASE, FOCUS = 900, 3.2           # flakes at 1280 x 800; nearer than FOCUS m is blurred
+BASE, FOCUS = 4200, 5            # flakes at 1280 x 800; nearer than FOCUS m: soft bokeh
 FIELDS = ("x", "y", "z", "vf", "ph", "sz", "id")
 _SPRITE = None
 
@@ -35,8 +35,9 @@ def sprite() -> QImage:
         img.fill(0)
         p = QPainter(img)
         g = QRadialGradient(QPointF(16, 16), 16)
-        for t, a in ((0, 1), (0.35, 0.75), (0.7, 0.22), (1, 0)):
-            g.setColorAt(t, rgba((215, 220, 235), a))
+        for t, col, a in ((0, (255, 255, 255), 1), (0.45, (250, 252, 255), 0.85), (0.75, (245, 248, 255), 0.25),
+                          (1, (245, 248, 255), 0)):
+            g.setColorAt(t, rgba(col, a))
         p.fillRect(0, 0, 32, 32, QBrush(g))
         p.end()
         _SPRITE = img
@@ -60,13 +61,14 @@ class Snow:
     def _new(self, top: bool) -> tuple:
         R = self.R
         u = R()
-        z = 1.5 + 26 * u ** 1.4                               # many far flakes, a few close to the lens
+        z = 3 + 60 * u ** 1.15                                # most flakes far, a few close to the lens
         x = R() * self.W
         y = -10 - R() * 20 if top else R() * self.H
         return x, y, z, 0.6 + R() * 0.8, R() * 100, 0.6 + R() * 0.8, float(int(R() * 1e6))
 
     def _fill(self, env):
-        n = budget(env, BASE * self.dens, BASE * self.dens * 2)
+        amount = getattr(env, "intensity", 1.0)               # panel slider (Rain / snow amount)
+        n = budget(env, BASE * self.dens * amount, BASE * self.dens * 2.5)
         cur = len(self.f["x"])
         if cur > n:
             self.f = {k: v[:n] for k, v in self.f.items()}
@@ -128,7 +130,7 @@ class Snow:
             sel = (flat > 0) & (th >= 0.25)
             p = QPainter(img)
             for x, y, h in zip(ex[sel].tolist(), ey[sel].tolist(), th[sel].tolist()):
-                p.fillRect(QRectF(x, y - h * 0.7, 1, h), rgba((196, 204, 222), clamp(0.25 + h * 0.25, 0, 0.8)))
+                p.fillRect(QRectF(x, y - h * 0.7, 1, h), rgba((232, 238, 250), clamp(0.3 + h * 0.25, 0, 0.85)))
             p.end()
         self.acc_img, self.acc_depth = img, want
         return img
@@ -140,43 +142,48 @@ class Snow:
         p.setPen(Qt.PenStyle.NoPen)
         p.fillRect(QRectF(0, 0, W, H), rgba(tuple(v * 1.2 for v in tone["haze"]), 0.05))   # a faint veil
         for x, y, r, I, col in lts:                           # burst light scattered by the falling snow
-            r, a = r * 1.2, min(0.2, 0.06 * I)
+            r, a = r * 1.2, min(0.08, 0.024 * I * getattr(env, "intensity", 1.0))   # gentle (web scatter 0.02)
             g = QRadialGradient(QPointF(x, y), r)
             g.setColorAt(0, rgba(col, a))
             g.setColorAt(1, rgba(col, 0))
             p.fillRect(QRectF(x - r, y - r, 2 * r, 2 * r), QBrush(g))
         if env.scenery is not None:
             p.drawImage(0, 0, self._accumulation(env))
-        r = 0.01 * (1.5 * env.H / f["z"]) * f["sz"]           # a ~1 cm flake
-        small = r < 1.1
-        path = QPainterPath()
-        s = np.maximum(1.3, r[small] * 1.8)
-        for x, y, ss in zip(f["x"][small].tolist(), f["y"][small].tolist(), s.tolist()):
-            path.addRect(x - ss / 2, y - ss / 2, ss, ss)
-        p.fillPath(path, rgba((205, 212, 228), 0.6))
+        # three layers: far specks and middle dots in two paths, near flakes as small soft sprites (bokeh)
+        r = 0.006 * (1.5 * env.H / f["z"]) * f["sz"]          # a ~1 cm flake (radius in px)
+        near = f["z"] < FOCUS * 2
+        far, mid = ~near & (r < 0.7), ~near & (r >= 0.7)
+        specks = QPainterPath()
+        for x, y in zip(f["x"][far].tolist(), f["y"][far].tolist()):
+            specks.addRect(x - 0.5, y - 0.5, 1, 1)
+        p.fillPath(specks, rgba((240, 244, 255), 0.45))
+        dots = QPainterPath()
+        s = np.clip(r[mid], 0.7, 1.6)
+        for x, y, ss in zip(f["x"][mid].tolist(), f["y"][mid].tolist(), s.tolist()):
+            dots.addEllipse(QPointF(x, y), ss, ss)
+        p.fillPath(dots, rgba((248, 250, 255), 0.8))
         spr = sprite()
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-        big = np.nonzero(~small)[0]
-        for i in big.tolist():
+        for i in np.nonzero(near)[0].tolist():
             z, ri = f["z"][i], r[i]
-            blur = (FOCUS - z) / FOCUS if z < FOCUS else 0.0
-            d = (ri * (1 + 2 * blur) + 0.8) * 2.4
-            tumble = 0.75 + 0.25 * math.sin(t * (2 + f["sz"][i] * 3) + f["ph"][i])   # a turning flake glints
-            p.setOpacity(clamp(0.7 * tumble * (1 - 0.8 * blur), 0.06, 1))
+            soft = (FOCUS - z) / FOCUS if z < FOCUS else 0.0
+            d = min(7.0, max(2.4, ri * 2.6 * (1 + 0.6 * soft)))
+            tumble = 0.8 + 0.2 * math.sin(t * (2 + f["sz"][i] * 3) + f["ph"][i])   # a turning flake glints
+            p.setOpacity(clamp(0.95 * tumble * (1 - 0.35 * soft), 0.3, 1))
             p.drawImage(QRectF(f["x"][i] - d / 2, f["y"][i] - d / 2, d, d), spr)
         p.setOpacity(1)
         for lx, ly, lr, LI, col in lts:                       # flakes inside a light's radius take its colour
             r2, a = (lr * 0.8) ** 2, min(0.9, 0.45 * LI)
             if a < 0.04:
                 continue
-            sel = (f["z"] >= FOCUS) & ((f["x"] - lx) ** 2 + (f["y"] - ly) ** 2 <= r2)
+            sel = (f["x"] - lx) ** 2 + (f["y"] - ly) ** 2 <= r2
             if not sel.any():
                 continue
-            sz = np.maximum(0.7, 0.01 * (1.5 * env.H / f["z"][sel]) * f["sz"][sel] * 1.2)
+            sz = np.clip(0.006 * (1.5 * env.H / f["z"][sel]) * f["sz"][sel] * 1.3, 0.7, 2.5)
             dots = QPainterPath()
             for x, y, ss in zip(f["x"][sel].tolist(), f["y"][sel].tolist(), sz.tolist()):
                 dots.addEllipse(QPointF(x, y), ss, ss)
-            p.fillPath(dots, rgba(tuple(min(255, v * 0.8 + 70) for v in col), a))
+            p.fillPath(dots, rgba(tuple(min(255, v * 0.7 + 90) for v in col), a))   # coloured by the burst
 
 
 def make_snow(env, density: float = 1.0) -> Snow:
