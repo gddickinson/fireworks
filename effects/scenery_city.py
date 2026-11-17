@@ -121,7 +121,8 @@ def street_lights(c, W, H, wl, seed, sc=None) -> None:
 
 
 def crown_tower(S, c, m, x, base, w, h, rnd, sc, col) -> float:
-    """A slender tower with a floodlit crown (pyramid or stepped), a mast with a beacon. Returns the mast top y."""
+    """A slender tower with a crown (pyramid or stepped; softly floodlit in a pale tone, or unlit when col is None),
+    a mast with a red aviation beacon. Returns the mast top y."""
     body, top = tone(S, (8, 9, 15), 0.35), base - h
     g = QLinearGradient(x, 0, x + w, 0)                         # a faint lit edge on one side
     g.setColorAt(0, rgb(*(v * 1.6 for v in body)))
@@ -130,8 +131,9 @@ def crown_tower(S, c, m, x, base, w, h, rnd, sc, col) -> float:
     c.p.fillRect(QRectF(x, top, w, h), QBrush(g))
     m.p.fillRect(QRectF(x, top, w, h), mat(0.35))
     windows(c, x, top + 4 * sc, w, base, rnd, False, sc)
-    fill_rect(c, x + w * 0.15, top, 1.2 * sc, h * 0.7, rgb(*col, 0.25))
-    fill_rect(c, x + w * 0.85 - 1.2 * sc, top, 1.2 * sc, h * 0.7, rgb(*col, 0.25))
+    if col:
+        fill_rect(c, x + w * 0.15, top, 1.2 * sc, h * 0.7, rgb(*col, 0.1))
+        fill_rect(c, x + w * 0.85 - 1.2 * sc, top, 1.2 * sc, h * 0.7, rgb(*col, 0.1))
     kind, ch = rnd(), h * (0.1 + rnd() * 0.06)
     if kind < 0.5:                                              # pyramid crown, lit from below
         crown = poly([(x, top), (x + w / 2, top - ch), (x + w, top)])
@@ -148,13 +150,18 @@ def crown_tower(S, c, m, x, base, w, h, rnd, sc, col) -> float:
         crown = poly(pts)
     p = c.p
     p.save()
-    fill(c, crown, vgrad(top - ch, top, [(0, rgb(*col, 0.35)), (1, rgb(*col, 0.95))]))
-    p.setClipPath(crown)
-    for i in range(1, 6):
-        p.fillRect(QRectF(x + w * i / 6 - sc * 0.4, top - ch, sc * 0.8, ch), rgb(0, 0, 0, 0.35))
+    if col:                                                     # a softly floodlit top: light from below, fading up
+        mid = [b + (v - b) * 0.4 for v, b in zip(col, body)]
+        fill(c, crown, vgrad(top - ch, top, [(0, rgb(*(v * 1.5 for v in body))), (1, rgb(*mid))]))
+        p.setClipPath(crown)
+        for i in range(1, 6):
+            p.fillRect(QRectF(x + w * i / 6 - sc * 0.4, top - ch, sc * 0.8, ch), rgb(0, 0, 0, 0.3))
+    else:                                                       # unlit top: a dark silhouette
+        fill(c, crown, rgb(*(v * 1.3 for v in body)))
     p.restore()
     m.p.fillRect(rect(x, top - ch, w, ch), mat(0.5))
-    glow(c, x + w / 2, top - ch * 0.4, w * 1.4, col, 0.22, 0.2)
+    if col:
+        glow(c, x + w / 2, top - ch * 0.3, w * 1.1, col, 0.08, 0.2)
     mh = h * 0.12                                               # mast with an aviation light
     fill_rect(c, x + w / 2 - sc * 0.6, top - ch - mh, 1.2 * sc, mh, rgb(*(v * 1.8 for v in body)))
     S.beacons.append((x + w / 2, top - ch - mh, 1.8 * sc))
@@ -166,7 +173,7 @@ def ferris_wheel(c, m, cx, cy, r, sc, rnd) -> None:
     legs = poly([(cx - r * 0.45, cy + r * 1.12), (cx, cy), (cx + r * 0.45, cy + r * 1.12)], close=False)
     stroke(c, legs, rgb(30, 32, 44), 2.2 * sc)
     stroke(m, legs, mat(0.4), 2.2 * sc)
-    n, hue = 32, ((120, 200, 255) if rnd() < 0.5 else (255, 120, 210))
+    n, hue = 32, ((175, 205, 235) if rnd() < 0.5 else (235, 190, 205))  # softly tinted LED rim
     spokes = path()
     for i in range(0, n, 2):
         a = i / n * 6.2832

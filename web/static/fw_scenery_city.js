@@ -124,7 +124,7 @@ export function ferrisWheel(c, m, cx, cy, r, sc, rnd) {
   c.strokeStyle = rgb(30, 32, 44); c.lineWidth = 2.2 * sc;     // A-frame legs
   c.beginPath(); c.moveTo(cx - r * 0.45, cy + r * 1.12); c.lineTo(cx, cy); c.lineTo(cx + r * 0.45, cy + r * 1.12); c.stroke();
   m.strokeStyle = mat(0.4); m.lineWidth = 2.2 * sc; m.beginPath(); m.moveTo(cx - r * 0.45, cy + r * 1.12); m.lineTo(cx, cy); m.lineTo(cx + r * 0.45, cy + r * 1.12); m.stroke();
-  const n = 32, hue = rnd() < 0.5 ? [120, 200, 255] : [255, 120, 210];
+  const n = 32, hue = rnd() < 0.5 ? [175, 205, 235] : [235, 190, 205];   // softly tinted LED rim
   c.strokeStyle = rgb(...hue, 0.35); c.lineWidth = 0.7 * sc;  // spokes
   c.beginPath(); for (let i = 0; i < n; i += 2) { const a = i / n * 6.2832; c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } c.stroke();
   for (const [rr, a, w] of [[r, 0.9, 1.6], [r * 0.93, 0.5, 1]]) {

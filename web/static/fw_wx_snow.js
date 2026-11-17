@@ -12,7 +12,7 @@ import { noise1, prng, hash } from './fw_noise.js';
 import { registerWeather } from './fw_fx.js';
 import { PXM, budget, canvas, clamp, cssLights, rgba, sceneGeometry, skyTone } from './fw_wx_util.js';
 
-const BASE = 2600, FOCUS = 5;                                 // flakes at 1280 x 800; nearer than FOCUS m: soft bokeh
+const BASE = 4200, FOCUS = 5;                                 // flakes at 1280 x 800; nearer than FOCUS m: soft bokeh
 
 export function makeSnow(env, opts = {}) {
   const seed = (env.seed ^ 0x5e0f) >>> 0, R = prng(seed), dens = opts.density ?? 1;
@@ -50,7 +50,7 @@ export function makeSnow(env, opts = {}) {
     stats() { return { count: flakes.length, vx: vxMean, acc: P.acc }; },
     drawOver(c, env) { drawSnow(c, env, P, W, H, t); },
     // a faint veil and burst light scattered by the falling snow, drawn by the renderer (see fw_wx_rain.js)
-    atmosphere(env) { return { veil: [...skyTone(env).haze.map(v => v * 1.2), 0.05, 0.06], scatter: 0.05 * (env.intensity ?? 1) }; },
+    atmosphere(env) { return { veil: [...skyTone(env).haze.map(v => v * 1.2), 0.05, 0.06], scatter: 0.02 * (env.intensity ?? 1) }; },
   };
   P.resize(env);
   return P;

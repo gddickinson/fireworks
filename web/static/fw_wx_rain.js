@@ -81,7 +81,7 @@ export function makeRain(env, opts = {}) {
     stats() { return { count: layers.reduce((a, L) => a + L.drops.length, 0), splashes: splashes.length, vx: vxMean }; },
     drawOver(c, env) { drawRain(c, env, P, { W, H, wl, heavy }); },
     // haze veil (thicker towards the bottom) and the share of burst light scattered by the rain, for the renderer
-    atmosphere(env) { const v = 0.05 + 0.04 * heavy; return { veil: [...skyTone(env).haze, v * 0.6, v * 1.4], scatter: 0.05 * heavy }; },
+    atmosphere(env) { const v = 0.05 + 0.04 * heavy; return { veil: [...skyTone(env).haze, v * 0.6, v * 1.4], scatter: 0.025 * heavy }; },
   };
   P.resize(env);
   return P;
