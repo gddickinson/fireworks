@@ -32,6 +32,13 @@ route('about', async () => {
       once per size from seeded noise: night skies with airglow and light pollution, star fields with a range of
       magnitudes and the Milky Way, fractal ridgelines fading into haze, a harbour skyline with lit windows. The drawing
       resolution and particle budget drop automatically if frames take too long.</li>
+    <li><b>Scenes, weather and effects</b> (rendering only): twelve seeded scenes (harbour, river bridge, waterfront,
+      desert, snowy village, castle, countryside, city, mountains, beach, forest, open country) at night or blue-hour
+      dusk; weather on one gusty wind shared by shells, smoke, rain and snow (rain in depth layers with splashes and
+      glints of burst light, snow that settles on roofs, fog that bursts glow through, a cloud deck lit from below,
+      storms with branching lightning); moon, aurora, shooting stars and sky lanterns; ground devices (gerbs, roman
+      candles, mines, cakes, a niagara falls from the bridge; these are part of the checked physics); a handheld
+      camera sway and a long-exposure photo mode.</li>
     <li><b>Sound</b> (off until you switch it on): synthesised launch thumps, booms and crackles, each delayed by the
       distance over the speed of sound.</li>
     <li><b>Export</b>: PNG/WebP stills, animated GIF (an encoder in this site, run in a Web Worker) and video (MP4 or

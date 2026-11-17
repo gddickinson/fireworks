@@ -1,4 +1,5 @@
-// Display page (#/show?pattern=Heart&background=Beach&weather=Snow&random=1&renderer=classic&finale=1): the firework
+// Display page (#/show?pattern=Heart&background=Beach&weather=Snow&random=1&renderer=classic&finale=1&time=dusk
+// &fx=moon,aurora&ground=1): the firework
 // display with the desktop app's controls. Default renderer: the realistic one (real_view.js); "Classic" is the
 // verified port of the desktop app (show_view.js). Settings can be saved in this browser.
 import { route, app, api, onLeave, $ } from './core.js';
@@ -30,6 +31,9 @@ route('show', async (args, query) => {
   if (query.weather) st.weather = query.weather;
   if (query.random) st.random_colors = true;
   if (['realistic', 'realistic2d', 'classic'].includes(query.renderer)) st.renderer = query.renderer;
+  if (query.time === 'dusk' || query.time === 'night') st.time_of_day = query.time;
+  if (query.fx) st.sky_fx = String(query.fx).split(',').filter(k => /^[a-z]{1,20}$/.test(k)).slice(0, 6);   // registry keys
+  if (query.ground) st.ground = true;
   app().innerHTML = `
     <div class="show-page">
       <div class="show-col">
