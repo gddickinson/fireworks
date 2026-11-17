@@ -46,6 +46,9 @@ export function runPyro(c) {
   sim.gravity_scale = c.gravity ?? 1; sim.height_scale = c.height ?? 1; sim.star_scale = c.stars ?? 1;
   sim.lift_time = 'lift' in c ? c.lift : 3;
   const d = new Director(rand);
+  d.ground = c.ground ?? false; d.niagara_height = c.niagara ?? null; d.rate = c.rate ?? d.rate;
+  const devices = {};                                         // mode "ground": step -> devices lit before that step
+  for (const dev of c.devices || []) (devices[Math.trunc(dev[0] * 60 + 0.5)] ||= []).push(dev);
   if (c.mode === 'finale') d.startFinale(sim);
   if (c.mode === 'pattern') d.pattern = new HeartPattern();
   let duration = null;
@@ -56,12 +59,13 @@ export function runPyro(c) {
   else if (c.mode === 'types') {
     d.auto = false;
     [...TYPES, 'salute'].forEach((t, i) => sim.launch(d.recipe(t), -0.9 + i * 0.15, null, null, 0));
-  }
+  } else if (c.mode === 'ground') d.auto = false;
   const counts = { launch: 0, burst: 0, crackle: 0 }, snapshots = [], steps = Math.trunc(c.seconds * 60);
   for (let step = 0; step <= steps; step++) {
     if (step % c.snap_every === 0) snapshots.push(snap(sim, counts));
+    for (const [, kind, x, z, opts] of devices[step] || []) sim.ground(kind, x, z, opts);
     d.step(sim); sim.step();
-    for (const e of sim.events) counts[e[0]]++;
+    for (const e of sim.events) counts[e[0]] = (counts[e[0]] ?? 0) + 1;
   }
   return { snapshots, duration };
 }

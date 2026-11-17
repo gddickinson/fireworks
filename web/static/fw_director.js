@@ -1,8 +1,10 @@
 // Copy of models/director.py: random auto-launch, the choreographed finale and message shows.
 import { TYPES, makeRecipe } from './fw_shells.js';
 import { showCues } from './fw_message_show.js';
+import { AUTO_DEVICES } from './fw_ground.js';
 
-export const FINALE_SECONDS = 42;
+export const FINALE_SECONDS = 42, GROUND_SHARE = 0.15;
+const stableSort = cues => cues.map((c, i) => [c, i]).sort((a, b) => a[0][0] - b[0][0] || a[1] - b[1]).map(a => a[0]);
 
 export function finaleCues(R) {
   const cues = [];
@@ -30,7 +32,20 @@ export function finaleCues(R) {
   t += 0.4;
   for (let i = 0; i < 10; i++) cues.push([t + i * 0.15, 'salute', R.uniform(-0.8, 0.8), R.uniform(0.5, 0.8), 0]);
   for (let i = 0; i < 3; i++) cues.push([t + 1.2 + i * 0.1, 'kamuro', -0.5 + i * 0.5, 0.78, 0]);
-  return cues.map((c, i) => [c, i]).sort((a, b) => a[0][0] - b[0][0] || a[1] - b[1]).map(a => a[0]);  // stable
+  return stableSort(cues);
+}
+
+// The finale's ground segment: [time, 'ground', device, x fraction, z m, opts] (director.py ground_cues).
+export function groundCues(R, niagaraHeight = null) {
+  const z = R.uniform(130, 170);
+  const cues = [[6.4, 'ground', 'candle', -0.55, z, { shots: 8, tilt: 0.12 }],
+    [6.4, 'ground', 'candle', 0.55, z, { shots: 8, tilt: -0.12 }]];
+  if (niagaraHeight !== null && niagaraHeight !== undefined) cues.push([13.5, 'ground', 'niagara', 0, z, { height: +niagaraHeight, duration: 11 }]);
+  for (let i = 0; i < 5; i++) cues.push([17 + i * 0.15, 'ground', 'gerb', -0.6 + i * 0.3, z, { duration: 7, color: 'gold', glitter: false }]);
+  for (let i = 0; i < 4; i++) cues.push([23.5 + i * 1.6, 'ground', 'mine', R.uniform(-0.6, 0.6), z, {}]);
+  cues.push([26, 'ground', 'cake', 0, z, { shots: 20 }]);
+  for (let i = 0; i < 7; i++) cues.push([30.5 + i * 0.08, 'ground', 'gerb', -0.75 + i * 0.25, z, { duration: 6, color: 'silver', glitter: true }]);
+  return cues;
 }
 
 export class Director {
@@ -38,6 +53,8 @@ export class Director {
     this.rand = rand; this.mode = 'auto'; this.auto = true; this.rate = 1.1; this.shell_type = 'mixed';
     this.color = null; this.pattern = null; this.pattern_scale = 1; this.cues = []; this.t0 = 0;
     this.until = 0;                                           // programme time before auto launching may resume
+    this.ground = false;                                      // ground devices in auto launching and the finale
+    this.niagara_height = null;                               // m: a bridge for the finale's niagara (null: none)
   }
   recipe(type = null) {
     const R = this.rand;
@@ -52,7 +69,10 @@ export class Director {
     }
     return rec;
   }
-  startFinale(sim) { this.mode = 'finale'; this.t0 = sim.time; this.cues = finaleCues(this.rand); this.until = 0; }
+  startFinale(sim) {
+    this.mode = 'finale'; this.t0 = sim.time; this.cues = finaleCues(this.rand); this.until = 0;
+    if (this.ground) this.cues = stableSort([...this.cues, ...groundCues(this.rand, this.niagara_height)]);
+  }
   // Opening show (off/short/medium/long), the messages, optionally the finale (fw_message_show.js). Returns seconds.
   queueMessages(sim, messages, opener = 'off', finale = false, gentle = false) {
     this.mode = 'finale'; this.t0 = sim.time;
@@ -69,7 +89,8 @@ export class Director {
           const m = cue[2];
           sim.launch({ type: 'message', color: [255, 240, 220], color2: null, pistil: null, size: 1, points: m.points,
             hold: m.hold ?? 2.5 }, 0, 450, m.height ?? 0.62, 0);
-        } else {
+        } else if (cue[1] === 'ground') sim.ground(cue[2], cue[3], cue[4], cue[5]);
+        else {
           const [, typ, x, h, tilt] = cue;
           sim.launch(this.recipe(typ), x, null, h, tilt);
         }
@@ -77,6 +98,9 @@ export class Director {
       if (!this.cues.length && now > Math.max(1, this.until)) this.mode = 'auto';
       return;
     }
-    if (this.auto && this.rand.random() < this.rate / 60) sim.launch(this.recipe());
+    if (this.auto && this.rand.random() < this.rate / 60) {
+      if (this.ground && this.rand.random() < GROUND_SHARE) sim.ground(AUTO_DEVICES[Math.trunc(this.rand.random() * AUTO_DEVICES.length)]);
+      else sim.launch(this.recipe());
+    }
   }
 }

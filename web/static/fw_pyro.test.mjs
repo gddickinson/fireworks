@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs';
 import { maxDiff } from './fw_reference.js';
 import { runPyro } from './fw_reference_pyro.js';
 import { Sim, sphereDirs } from './fw_pyro.js';
-import { Director, finaleCues } from './fw_director.js';
+import { Director, finaleCues, groundCues } from './fw_director.js';
+import { DEVICES } from './fw_ground.js';
 import { starRGB } from './fw_palette.js';
 import { pyRand } from './fw_rand.js';
 
@@ -61,6 +62,26 @@ test('star colour: white-hot at ignition, its colour while burning, dark at the 
   starRGB(s, o); assert.ok(o[1] > 200 && o[3] > 1.5);
   s.age = 0.8; starRGB(s, o); assert.ok(o[1] < 60 && o[0] > 250);
   s.age = 2; starRGB(s, o); assert.ok(o[3] < 1e-9);
+});
+
+test('ground devices: sparks stay in a plausible region and every device finishes', () => {
+  for (const kind of DEVICES) {
+    const sim = new Sim(pyRand(8)), e = sim.ground(kind, 0, 200, kind === 'niagara' ? { height: 20, duration: 5 } : {});
+    let top = 0;
+    for (let i = 0; i < 60 * 12; i++) {
+      sim.step();
+      for (const s of sim.stars) if (s.ground) { top = Math.max(top, s.y); assert.ok(s.y > -0.5 && Math.abs(s.x - e.x) < 60, kind); }
+    }
+    if (kind !== 'cake') assert.ok(top > 5 && top < 50, `${kind}: top ${top} m`);   // cake shells burst aloft
+    assert.equal(sim.emitters.length, 0, kind);
+    assert.ok(!sim.stars.some(s => s.ground), `${kind}: ground stars left`);
+  }
+});
+
+test('the finale ground segment: niagara only with a bridge; off by default', () => {
+  assert.equal(new Director(pyRand(1)).ground, false);
+  assert.ok(!groundCues(pyRand(2)).some(c => c[2] === 'niagara'));
+  assert.ok(groundCues(pyRand(2), 20).some(c => c[2] === 'niagara'));
 });
 
 console.log(`${n} tests passed`);

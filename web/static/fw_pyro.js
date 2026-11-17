@@ -2,6 +2,7 @@
 // gravity and quadratic air drag relative to the wind, fixed step DT = 1/60 s. Random numbers are drawn in the same
 // order as the Python, so a seeded run matches web/reference.py (fw_pyro.test.mjs). Shell recipes: fw_shells.js.
 import { burst } from './fw_shells.js';
+import { makeDevice, stepDevice } from './fw_ground.js';
 
 export const DT = 1 / 60, G = 9.81, FOCAL = 1.5, SHELL_DEPTH = [300, 600], SHELL_DRAG = 0.006;
 
@@ -15,6 +16,7 @@ export class Star {
     this.end = null; this.recipe = null; this.target = null; this.glide = 0; this.hold = 0; this.nograv = false;
     this.theta0 = 0;                                          // rising shell: exact drag trajectory (0: integrate)
     this.rate = 1;                                            // rising shell: playback rate of its climb (Lift time)
+    this.ground = false;                                      // star of a ground device: dies below y = 0
   }
 }
 
@@ -34,6 +36,7 @@ export class Sim {
     this.wind = 1.5; this.gravity_scale = 1; this.height_scale = 1; this.star_scale = 1;
     this.lift_time = 3;                                       // s to the burst at most; longer climbs play faster (null: real)
     this._new = []; this._pending = [];                        // launches between frames, reported by the next step
+    this.emitters = [];                                       // running ground devices (fw_ground.js)
   }
   x_max(z) { return z * this.aspect / (2 * FOCAL); }
   y_top(z) { return z * this.horizon / FOCAL; }
@@ -60,10 +63,18 @@ export class Sim {
     return s;
   }
 
+  // Light a ground device (gerb, candle, mine, cake, niagara; fw_ground.js) at x (fraction of the half-width), depth z.
+  ground(kind, x = null, z = null, opts = null) {
+    const e = makeDevice(this, kind, x, z, opts);
+    this.emitters.push(e);
+    return e;
+  }
+
   step() {
     this.events = this._pending; this._pending = [];
     const R = this.rand, g = G * this.gravity_scale, wind = this.wind, alive = [], born = [];
     const crowded = this.stars.length > this.budget;
+    if (this.emitters.length) this.emitters = this.emitters.filter(e => stepDevice(this, e, DT, crowded));
     for (const s of this.stars) {
       if (s.age < 0) { s.age += DT; alive.push(s); continue; }
       if (s.theta0 > 0) {                                     // rising shell: exact solution of the climb against drag
@@ -88,6 +99,7 @@ export class Sim {
         s.acc += s.trail * DT;
         while (s.acc >= 1) { s.acc -= 1; born.push(this._spark(s)); }
       }
+      if (s.ground && s.y < 0) s.age = s.life;
       if (s.kind === 'shell' && s.vy <= 0) s.age = s.life;
       if (s.age >= s.life) {
         if (s.end === 'burst') burst(this, s);

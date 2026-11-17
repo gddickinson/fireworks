@@ -3,7 +3,8 @@
 Same idea as web/reference.py: a mulberry32 `PyRand` replaces ``random``, so the JS copy (fw_pyro.js, fw_shells.js,
 fw_director.js) consumes the same stream; fw_pyro.test.mjs and the Verify page replay these cases.  The realistic
 engine takes its random source as an argument, so no module patching is needed.  Snapshots hold, per star kind, the
-count and the sums of positions and velocities, plus the event counts so far.
+count and the sums of positions and velocities, plus the event counts so far.  Ground cases light devices
+(models/ground_effects.py) at given times; "finale_ground" plays the finale with Director.ground on.
 """
 from __future__ import annotations
 
@@ -26,6 +27,15 @@ PYRO_CASES = [
     {"name": "message", "seed": 41, "seconds": 12, "snap_every": 60, "mode": "message", "text": "HI 2026"},
     {"name": "message_show", "seed": 43, "seconds": 36, "snap_every": 120, "mode": "message", "text": "HELLO|2027",
      "opener": "short", "finale": False},
+    {"name": "ground_gerbs_candles_mine", "seed": 47, "seconds": 10, "snap_every": 60, "mode": "ground",
+     "devices": [[0.2, "gerb", -0.5, 200.0, {"color": "gold", "glitter": False}], [0.5, "gerb", 0.4, None, {}],
+                 [1.0, "candle", 0.0, 220.0, {"shots": 6, "tilt": 0.1}], [4.0, "mine", None, None, {}],
+                 [6.0, "gerb", 0.1, 230.0, {"duration": 3.0, "color": "silver", "glitter": True}]]},
+    {"name": "ground_niagara_cake", "seed": 53, "seconds": 12, "snap_every": 60, "mode": "ground", "aspect": 1.2,
+     "devices": [[0.1, "niagara", 0.0, 210.0, {"height": 20.0, "duration": 9.0}], [2.0, "cake", 0.3, None, {}],
+                 [5.0, "cake", -0.4, 240.0, {"shots": 10, "style": "crackle"}]]},
+    {"name": "finale_ground", "seed": 59, "seconds": 48, "snap_every": 120, "mode": "finale", "ground": True,
+     "niagara": 22.0, "rate": 3.0},
 ]
 PYRO_BY_NAME = {c["name"]: c for c in PYRO_CASES}
 
@@ -63,6 +73,12 @@ def run_pyro(case: dict) -> dict:
     sim.star_scale = case.get("stars", 1.0)
     sim.lift_time = case.get("lift", 3.0)
     d = Director(rand)
+    d.ground = case.get("ground", False)
+    d.niagara_height = case.get("niagara")
+    d.rate = case.get("rate", d.rate)
+    devices = {}                                     # mode "ground": step -> [device, ...] lit before that step
+    for dev in case.get("devices", []):
+        devices.setdefault(int(dev[0] * 60 + 0.5), []).append(dev)
     mode = case["mode"]
     if mode == "finale":
         d.start_finale(sim)
@@ -75,6 +91,8 @@ def run_pyro(case: dict) -> dict:
         d.auto = False
         for i, t in enumerate(TYPES + ["salute"]):
             sim.launch(d.recipe(t), -0.9 + i * 0.15, None, None, 0.0)
+    elif mode == "ground":
+        d.auto = False
     if mode != "message":
         duration = None
     counts = {"launch": 0, "burst": 0, "crackle": 0}
@@ -83,10 +101,12 @@ def run_pyro(case: dict) -> dict:
     for step in range(steps + 1):
         if step % case["snap_every"] == 0:
             snaps.append(_snap(sim, counts))
+        for _, kind, x, z, opts in devices.get(step, []):
+            sim.ground(kind, x, z, opts)
         d.step(sim)
         sim.step()
         for e in sim.events:
-            counts[e[0]] += 1
+            counts[e[0]] = counts.get(e[0], 0) + 1
     return {"case": case, "snapshots": snaps, "duration": duration}
 
 

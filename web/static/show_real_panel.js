@@ -3,6 +3,7 @@
 import { esc } from './core.js';
 import { LABELS, TYPES } from './fw_shells.js';
 import { SKY_FX } from './fw_fx.js';
+import { DEVICES, LABELS as GROUND_LABELS } from './fw_ground.js';
 
 export const RENDERERS = [['realistic', 'Realistic (WebGL, 3-D physics)'], ['realistic2d', 'Realistic, 2D canvas (no WebGL)'],
   ['classic', 'Classic (the desktop app\'s model, verified)']];
@@ -18,6 +19,10 @@ export function buildShowGroup(host, V, st, actions) {
       <label for="shell">Shell type</label>
       <select id="shell"><option value="mixed">Mixed (a real show)</option>${TYPES.map(t => `<option value="${t}"${t === st.shell_type ? ' selected' : ''}>${esc(LABELS[t])}</option>`).join('')}</select>
       <div class="btns"><button id="finale">Start the finale</button><a class="btn alt" href="#/messages">Messages…</a></div>
+      <label class="chk" for="ground"><input type="checkbox" id="ground"${st.ground ?? false ? ' checked' : ''}> Ground effects (gerbs, candles, mines, cakes in the show and the finale)</label>
+      <label for="gdev">Ground device</label>
+      <div class="btns"><select id="gdev">${DEVICES.map(k => `<option value="${k}"${k === (st.ground_device ?? 'gerb') ? ' selected' : ''}>${esc(GROUND_LABELS[k])}</option>`).join('')}</select>
+        <button id="gfire">Fire</button></div>
       <label for="lift">Lift time <b id="liftv"></b></label>
       <input type="range" id="lift" min="1.5" max="5" step="0.5" value="${st.lift_time ?? 3}">
       <p class="small mute">A real 150 m shell climbs for about 4.5 s; shorter lift times play the same climb faster. 5 = real time.</p>
@@ -37,6 +42,14 @@ export function buildShowGroup(host, V, st, actions) {
     q('#shell').value = st.shell_type;
     q('#shell').onchange = () => { st.shell_type = q('#shell').value; V.director.shell_type = st.shell_type; };
     q('#finale').onclick = () => actions.finale();
+    V.ground = st.ground ?? false;
+    q('#ground').onchange = () => { st.ground = q('#ground').checked; V.ground = st.ground; };
+    q('#gdev').onchange = () => { st.ground_device = q('#gdev').value; };
+    q('#gfire').onclick = () => {                              // a niagara hangs from a bridge if the scene has one
+      const k = q('#gdev').value;
+      V.sync?.();
+      V.sim.ground(k, k === 'niagara' ? 0 : null, null, k === 'niagara' && V.scenery?.bridge ? { height: V.scenery.bridge } : null);
+    };
     q('#sound').onchange = () => { st.sound = q('#sound').checked; actions.sound(st.sound); };
     V.director.shell_type = st.shell_type;
     const lift = q('#lift'), show = () => { const v = +lift.value; q('#liftv').textContent = v >= 5 ? 'real time' : v + ' s'; V.liftTime = v >= 5 ? null : v; st.lift_time = v; };

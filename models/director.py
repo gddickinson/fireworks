@@ -7,12 +7,18 @@
     crescendo and a salute barrage), after which it returns to auto.  `finale_cues(rand)` builds the cue list;
   * messages: `queue_messages()` plays an optional opening show, the message shells (text points from the front
     end) and optionally the finale (timeline in models/message_show.py).
+With `ground = True` (off by default) auto launching lights a ground device (models/ground_effects.py) in
+GROUND_SHARE of its launches and the finale gets a ground segment (`ground_cues`): roman candles, a niagara curtain
+if `niagara_height` (m, a bridge in the scene) is set, a line of gerbs, mines, a cake and a closing silver line.
+Message shows never use ground devices.
 """
 from __future__ import annotations
 
+from models.ground_effects import AUTO_DEVICES
 from models.shell_types import TYPES, make_recipe
 
 FINALE_SECONDS = 42.0
+GROUND_SHARE = 0.15     # share of auto launches that are ground devices when Director.ground is on
 
 
 def finale_cues(rand) -> list:
@@ -51,6 +57,26 @@ def finale_cues(rand) -> list:
     return sorted(cues, key=lambda c: c[0])
 
 
+def ground_cues(rand, niagara_height=None) -> list:
+    """The finale's ground segment: [(time s, "ground", device, x fraction, z m, opts), ...] (finale_cues timing)."""
+    R = rand
+    z = R.uniform(130.0, 170.0)                       # one firing line
+    cues = [(6.4, "ground", "candle", -0.55, z, {"shots": 8, "tilt": 0.12}),
+            (6.4, "ground", "candle", 0.55, z, {"shots": 8, "tilt": -0.12})]
+    if niagara_height is not None:
+        cues.append((13.5, "ground", "niagara", 0.0, z, {"height": float(niagara_height), "duration": 11.0}))
+    for i in range(5):                                # gold gerbs under the willow curtain
+        cues.append((17.0 + i * 0.15, "ground", "gerb", -0.6 + i * 0.3, z, {"duration": 7.0, "color": "gold",
+                                                                           "glitter": False}))
+    for i in range(4):                                # mines through the crescendo
+        cues.append((23.5 + i * 1.6, "ground", "mine", R.uniform(-0.6, 0.6), z, {}))
+    cues.append((26.0, "ground", "cake", 0.0, z, {"shots": 20}))
+    for i in range(7):                                # a closing line of silver glitter gerbs
+        cues.append((30.5 + i * 0.08, "ground", "gerb", -0.75 + i * 0.25, z, {"duration": 6.0, "color": "silver",
+                                                                             "glitter": True}))
+    return cues
+
+
 class Director:
     def __init__(self, rand):
         self.rand = rand
@@ -64,6 +90,8 @@ class Director:
         self.cues: list = []
         self.t0 = 0.0
         self.until = 0.0             # programme time before auto launching may resume
+        self.ground = False          # add ground devices to auto launching and the finale
+        self.niagara_height = None   # m: a bridge in the scene for the finale's niagara curtain (None: no niagara)
 
     def recipe(self, type_=None) -> dict:
         R = self.rand
@@ -85,6 +113,8 @@ class Director:
         self.mode = "finale"
         self.t0 = sim.time
         self.cues = finale_cues(self.rand)
+        if self.ground:
+            self.cues = sorted(self.cues + ground_cues(self.rand, self.niagara_height), key=lambda c: c[0])
         self.until = 0.0
 
     def queue_messages(self, sim, messages: list, opener: str = "off", finale: bool = False,
@@ -110,6 +140,8 @@ class Director:
                     rec = {"type": "message", "color": (255, 240, 220), "color2": None, "pistil": None, "size": 1.0,
                            "points": m["points"], "hold": m.get("hold", 2.5)}
                     sim.launch(rec, 0.0, 450.0, m.get("height", 0.62), 0.0)
+                elif cue[1] == "ground":
+                    sim.ground(cue[2], cue[3], cue[4], cue[5])
                 else:
                     _, typ, x, h, tilt = cue
                     sim.launch(self.recipe(typ), x, None, h, tilt)
@@ -117,4 +149,7 @@ class Director:
                 self.mode = "auto"
             return
         if self.auto and self.rand.random() < self.rate / 60.0:
-            sim.launch(self.recipe())
+            if self.ground and self.rand.random() < GROUND_SHARE:
+                sim.ground(AUTO_DEVICES[int(self.rand.random() * len(AUTO_DEVICES))])
+            else:
+                sim.launch(self.recipe())

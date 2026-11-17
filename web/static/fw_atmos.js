@@ -63,6 +63,9 @@ export class Atmos {
         const [, x, z] = e;
         this.lights.push({ x, y: 2, z, col: [255, 170, 90], s: 0.35, t: 0, launch: true });
         for (let i = 0; i < 3; i++) this.puff(x + (R() - 0.5) * 6, 2 + R() * 6, z, 4 + R() * 3, 0.12);
+      } else if (e[0] === 'ground') {                          // a gerb or niagara: a steady glow while it burns
+        const [, x, y, z, col, strength, dur] = e;
+        this.lights.push({ x, y, z, col, s: strength, t: 0, hold: dur });
       } else if (e[0] === 'crackle' && R() < 0.2) {
         this.lights.push({ x: e[1], y: e[2], z: e[3], col: [255, 235, 200], s: 0.15, t: 0 });
       }
@@ -73,18 +76,19 @@ export class Atmos {
   // Intensity of a light now: a sharp flash plus the glow of the burning stars.
   static intensity(L) {
     if (L.launch) return L.s * Math.exp(-L.t / 0.6);
+    if (L.hold) return L.s * (0.85 + 0.15 * Math.sin(L.t * 37)) * (L.t < L.hold ? Math.min(1, L.t / 0.4) : Math.exp(-(L.t - L.hold) / 0.4));
     return L.s * (2.4 * Math.exp(-L.t / 0.09) + 0.45 * Math.exp(-L.t / 1.1));
   }
   update(dt, wind) {
     for (const L of this.lights) L.t += dt;
-    this.lights = this.lights.filter(L => L.t < 4);
+    this.lights = this.lights.filter(L => L.t < 4 + (L.hold || 0));
     for (const p of this.puffs) {
       p.age += dt; p.x += wind * dt; p.y += 0.35 * dt; p.r += (1.6 / (1 + p.age * 0.15)) * dt;
       p.a = p.a0 * Math.exp(-p.age / 22) * Math.min(1, p.age * 3);
     }
     this.puffs = this.puffs.filter(p => p.a > 0.004);
     let f = 0;
-    for (const L of this.lights) if (!L.launch) f += L.s * Math.exp(-L.t / 0.09);
+    for (const L of this.lights) if (!L.launch && !L.hold) f += L.s * Math.exp(-L.t / 0.09);
     this.flash = f;
   }
   // The strongest n lights in screen space: [{x, y, r (px), rgb (HDR)}].

@@ -6,7 +6,8 @@ tail sparks, crackle pops, crossette fragments, sub-shells of a multi-break); `k
 does.  Drag acts on the velocity relative to the wind: a = -k |v - w| (v - w), so a star with drag coefficient k has
 terminal velocity sqrt(g / k).  Stars burst out at 30-70 m/s, slow within a second or two and then droop.
 
-`Sim.step()` advances one frame and fills `Sim.events` (launches since the last step, bursts, crackles) for lights, smoke and sound.
+`Sim.step()` advances one frame and fills `Sim.events` (launches since the last step, bursts, crackles, 'ground'
+device lights) for lights, smoke and sound; ground devices (`Sim.ground()`, models/ground_effects.py) run first.
 The shell recipes live in models/shell_types.py and the launch schedule in models/director.py.  All randomness goes
 through the injected ``rand`` (``random.Random`` in the desktop app, a seeded mulberry32 ``PyRand`` for the reference
 runs), in the same order as the JavaScript copy web/static/fw_pyro.js, which is node-tested against these runs.
@@ -25,7 +26,7 @@ SHELL_DRAG = 0.006   # shells: terminal velocity ~40 m/s
 class Star:
     __slots__ = ("kind", "x", "y", "z", "vx", "vy", "vz", "k", "age", "life", "color", "color2", "change",
                  "bright", "size", "trail", "trail_color", "trail_life", "acc", "glitter", "strobe", "phase",
-                 "end", "recipe", "target", "glide", "hold", "nograv", "theta0", "rate")
+                 "end", "recipe", "target", "glide", "hold", "nograv", "theta0", "rate", "ground")
 
     def __init__(self, kind, x, y, z, vx, vy, vz, k, life, color, bright=1.0, size=1.0):
         self.kind = kind
@@ -54,6 +55,7 @@ class Star:
         self.nograv = False
         self.theta0 = 0.0     # rising shell: exact drag trajectory parameter atan(v0 sqrt(k / g)) (0: integrate)
         self.rate = 1.0       # rising shell: playback rate of its climb (Lift time option)
+        self.ground = False   # star of a ground device (models/ground_effects.py): dies when it falls below y = 0
 
 
 def sphere_dirs(n: int, rot: float):
@@ -88,6 +90,7 @@ class Sim:
         self.star_scale = 1.0
         self.lift_time = 3.0          # s from launch to burst at most: longer climbs are played faster (None: real time)
         self._new: list = []
+        self.emitters: list = []      # running ground devices (models/ground_effects.py)
         self._pending: list = []      # events raised between frames (launches), reported by the next step
 
     # --- view geometry (pinhole camera at the origin looking along +z, horizon line at `horizon`) --------------
@@ -134,6 +137,14 @@ class Sim:
         self._pending.append(("launch", x, z, recipe["type"]))
         return s
 
+    def ground(self, kind: str, x: float | None = None, z: float | None = None, opts: dict | None = None):
+        """Light a ground device (gerb, candle, mine, cake, niagara; models/ground_effects.py) at x (fraction of the
+        half-width) and depth z (m) on the horizon line; random where not given."""
+        from models.ground_effects import make_device
+        e = make_device(self, kind, x, z, opts)
+        self.emitters.append(e)
+        return e
+
     # --- the frame step ---------------------------------------------------------------------------------------
     def step(self) -> None:
         from models.shell_types import burst  # late import: shell_types imports this module
@@ -144,6 +155,9 @@ class Sim:
         alive = []
         born: list = []
         crowded = len(self.stars) > self.budget
+        if self.emitters:                         # ground devices: their stars join after the frame (self._new)
+            from models.ground_effects import step_device
+            self.emitters = [e for e in self.emitters if step_device(self, e, DT, crowded)]
         for s in self.stars:
             if s.age < 0.0:                       # delayed (crackle pop not yet lit)
                 s.age += DT
@@ -180,6 +194,8 @@ class Sim:
                 while s.acc >= 1.0:
                     s.acc -= 1.0
                     born.append(self._spark(s))
+            if s.ground and s.y < 0.0:
+                s.age = s.life
             if s.kind == "shell" and s.vy <= 0.0:
                 s.age = s.life
             if s.age >= s.life:
