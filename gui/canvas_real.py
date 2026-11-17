@@ -8,7 +8,9 @@ original behaviour and the constructor's default; the main window starts in Real
 Scenery (realistic renderer only): "Realistic" paints the chosen background with effects/scenery.py (built once per
 size in device pixels, rebuilt after a resize once the size has settled for RESIZE_SETTLE s; the sim's horizon is the
 scenery's, so shells rise from behind the skyline or waterline); "Classic" (the constructor's default) draws the
-effects/backgrounds.py object as before.  Lift time (ui_specs.LIFT_TIME) sets Sim.lift_time; 5 s means real time.
+effects/backgrounds.py object as before.  The realistic-only scenes (effects/scenery_more.py, scenery_land.py) are
+chosen by name (background_name); the time of day, sky effects, scene animations, realistic weather and ground
+devices live in gui/canvas_fx.py (FxMixin).  Lift time (ui_specs.LIFT_TIME) sets Sim.lift_time; 5 s means real time.
 """
 from __future__ import annotations
 
@@ -20,7 +22,7 @@ from PyQt6.QtGui import QImage, QPainter
 from effects import backgrounds as B
 from effects.backgrounds import BeachBackground
 from effects.mountains import MountainsBackground
-from effects.scenery import SCENERY_HORIZON, build_scenery
+from effects.scenery import NEW_SCENERY_HORIZON, SCENE_HORIZON, build_scenery
 from gui.real_painter import RealPainter
 from gui.real_show import BEACH_HORIZON, HORIZON, RealShow
 from gui.text_points import message
@@ -101,25 +103,28 @@ class RealisticMixin:
 
     def scene_name(self) -> str:
         """The background's name for effects/scenery.py ("None" without a background)."""
+        if self.background_name in NEW_SCENERY_HORIZON:
+            return self.background_name
         return SCENE_OF_CLASS.get(type(self.background), "None") if self.background is not None else "None"
 
     def _real_horizon(self) -> float:
         if self.scenery_mode == "Realistic":
-            return SCENERY_HORIZON[self.scene_name()]
+            return SCENE_HORIZON[self.scene_name()]
         return BEACH_HORIZON if isinstance(self.background, BeachBackground) else HORIZON
 
     def scenery(self, W: int, H: int, dpr: float = 1.0):
         """The realistic scenery for a W x H view (built at W*dpr x H*dpr device pixels, cached; while the view is
         being resized the previous build of the same scene is reused, scaled)."""
-        name = self.scene_name()
+        name, tod = self.scene_name(), self.time_of_day
         w, h = max(2, round(W * dpr)), max(2, round(H * dpr))
         S = self._scenery
-        if S is not None and S.name == name and (S.W, S.H) == (w, h):
+        same = S is not None and S.name == name and S.time == tod
+        if same and (S.W, S.H) == (w, h):
             return S
-        if S is not None and S.name == name and time.monotonic() - self._resized_at < RESIZE_SETTLE:
+        if same and time.monotonic() - self._resized_at < RESIZE_SETTLE:
             QTimer.singleShot(int(RESIZE_SETTLE * 1000) + 20, self.update)
             return S
-        self._scenery = build_scenery(name, w, h)
+        self._scenery = build_scenery(name, w, h, time=tod)
         return self._scenery
 
     def resizeEvent(self, event):
@@ -145,12 +150,15 @@ class RealisticMixin:
         color = None if self.use_random_colors or c is None else (c.red(), c.green(), c.blue())
         real.sync(self.particle_count, self.gravity, self.launch_speed, color, self._real_pattern(),
                   self.pattern_scale, self.auto_launch)
+        real.set_ground(self.ground_on, self.niagara_height())
 
     # --- frame ----------------------------------------------------------------------------------------------
     def _update_real(self) -> None:
         self._real_sync()
         self._real.step()
-        if self.weather_effect:
+        if self.uses_fx():
+            self._fx_step()
+        elif self.weather_effect:
             self.weather_effect.update()
         self.update()
 
@@ -164,8 +172,10 @@ class RealisticMixin:
         real = self._ensure_real()
         if self.scenery_mode == "Realistic":
             dpr = painter.device().devicePixelRatioF() if painter.device() is not None else 1.0
-            self._real_painter.render(painter, W, H, real, weather=self.weather_effect,
-                                      scenery=self.scenery(W, H, dpr))
+            S = self.scenery(W, H, dpr)
+            fx = self.fx_layers(W, H)
+            self._real_painter.render(painter, W, H, real, scenery=S, fx=fx,
+                                      fx_env=self.fx_env(W, H) if fx is not None else None)
             return
         water = BEACH_HORIZON * H if isinstance(self.background, BeachBackground) else None
         self._real_painter.render(painter, W, H, real, self.background, self.weather_effect, self.background_color,

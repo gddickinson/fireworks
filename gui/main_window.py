@@ -7,6 +7,7 @@ from config import DisplayConfig
 from gui.canvas import FireworksCanvas
 from gui.controls import ControlPanel
 from gui import export
+from gui.controls_scene import load_scene_settings
 from ui_specs import LIFT_TIME
 
 class DetachableTabWidget(QTabWidget):
@@ -273,6 +274,10 @@ class FireworksApp(QMainWindow):
         self.controls.shell_type_changed.connect(self.canvas.set_shell_type)
         self.controls.finale_requested.connect(self.canvas.start_finale)
         self.controls.message_requested.connect(self.show_message)
+        self.controls.time_of_day_changed.connect(self.canvas.set_time_of_day)
+        self.controls.sky_effects_changed.connect(self.canvas.set_sky_effects)
+        self.controls.ground_toggled.connect(self.canvas.set_ground_effects)
+        self.controls.ground_fire_requested.connect(self.canvas.fire_ground)
 
     def show_message(self, text: str):
         """Spell a message with message shells (realistic renderer)"""
@@ -296,6 +301,9 @@ class FireworksApp(QMainWindow):
         self.canvas.set_shell_type(values['shell_type'])
         self.canvas.set_scenery_mode(values['scenery'])
         self.canvas.set_lift_time(values['lift_time'])
+        self.canvas.set_time_of_day(values['time_of_day'])
+        self.canvas.set_sky_effects(self.controls.sky_effects())
+        self.canvas.set_ground_effects(values['ground'])
         self.canvas.set_renderer(values['renderer'])
 
     def save_settings(self):
@@ -353,6 +361,8 @@ class FireworksApp(QMainWindow):
         if self.settings.contains('random_colors'):
             self.controls.random_color.setChecked(
                 self.settings.value('random_colors', type=bool))
+
+        load_scene_settings(self.controls, self.settings)   # time of day, sky effects, ground devices
 
     def reset_to_defaults(self):
         """Reset all controls to default values"""

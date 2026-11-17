@@ -8,7 +8,7 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 |------|---------|-----------|
 | `main.py` | Entry point: QApplication, main window | `main()` |
 | `config.py` | Physics constants and window settings (Qt-free at import; QColor made lazily) | `FireworkConfig`, `DisplayConfig`, `DEFAULT_FIREWORK_RGB`, `DEFAULT_BACKGROUND_RGB`, `DEFAULT_LAUNCH_SPEED` |
-| `ui_specs.py` | Qt-free control lists and slider specs, shared by `gui/controls.py` and `web/app.py` | `PATTERNS`, `BACKGROUNDS`, `WEATHER`, `RENDERERS`, `SCENERIES`, `SHELL_TYPES`, `SliderSpec`, `SLIDERS`, `LIFT_TIME` (desktop only) |
+| `ui_specs.py` | Qt-free control lists and slider specs, shared by `gui/controls.py` and `web/app.py` | `PATTERNS`, `BACKGROUNDS`, `WEATHER`, `RENDERERS`, `SCENERIES`, `SHELL_TYPES`, `SliderSpec`, `SLIDERS`, `LIFT_TIME`, `REAL_BACKGROUNDS`, `TIMES_OF_DAY`, `REAL_WEATHER`, `SKY_EFFECTS`, `GROUND_DEVICE_LABELS` (desktop only) |
 | `models/particle.py` | One spark: velocity, gravity, 100-frame fade | `Particle` |
 | `models/firework.py` | Rocket that climbs and bursts at its apex (gravity, launch speed, pattern) | `Firework` |
 | `models/patterns.py` | Explosion shapes (one burst particle per point, `Firework._explode_pattern`) | `CirclePattern`, `HeartPattern`, `StarPattern`, `SpiralPattern`, `DoubleRingPattern`, `RandomPattern`, `TextPattern` |
@@ -22,16 +22,29 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `effects/mountains.py` | Mountain ranges with snow caps | `MountainsBackground` |
 | `effects/scenery_noise.py` | numpy port of `web/static/fw_noise.js` (same numbers: uint32 hash, value noise, fbm, ridged, mulberry32) | `hash`, `noise1`, `noise2`, `fbm1`, `fbm2`, `ridged1`, `prng` |
 | `effects/scenery_parts.py` | QPainter/numpy port of `fw_scenery_parts.js`: sky, stars, Milky Way (numpy, scaled up), ridges, snow caps, trees, palms, water reflection (numpy) | `Layer`, `image_array()`, `sky`, `stars`, `milky_way`, `range_`, `snow`, `conifer`, `broadleaf`, `palm`, `water` |
-| `effects/scenery.py` | Realistic scenery per background (port of `fw_scenery.js`, same seeded draws): back/front/material images, horizon, water, fireflies | `build_scenery()`, `Scenery`, `SCENERY_HORIZON` |
+| `effects/scenery.py` | Realistic scenery per background (port of `fw_scenery.js`, same seeded draws): back/front/material images, horizon, water, fireflies, time of day, positions for the scene animations, `bridge` (m, River Bridge: niagara); the original five scenes (unchanged at night) | `build_scenery(name, W, H, seed, time)`, `Scenery`, `SCENERY_HORIZON` (original), `NEW_SCENERY_HORIZON`, `SCENE_HORIZON` (all 13) |
+| `effects/scenery_sky.py` | Night / dusk (blue hour) skies, stars, dusk terrain tone (`fw_scenery_sky.js`) | `dark_sky`, `starry`, `tone`, `is_dusk` |
+| `effects/scenery_draw.py` | Canvas-2D-like helpers (non-zero polygons, strokes, rects, half ellipses, `both`) | `poly`, `fill`, `stroke`, `fill_rect`, `both` |
+| `effects/scenery_city.py` | Skylines, windows, street lights, glows, crown towers, ferris wheel, cable-stayed bridge (`fw_scenery_city.js`) | `skyline`, `building`, `glow`, `crown_tower`, `ferris_wheel`, `cable_bridge` |
+| `effects/scenery_props.py` | Tree lines, surf, snowy conifers, mesas, dunes, oak, hill, fields, light reflections (`fw_scenery_props.js`) | `ridge_y`, `dunes`, `mesa_line`, `hill_line`, `fields`, `oak`, `light_reflection`, `size_scale` |
+| `effects/scenery_houses.py` | Cottages, church, town houses, castle, boats, jetty, tent, turbines, crowd (`fw_scenery_houses.js`) | `cottage`, `church`, `castle`, `boat`, `crowd` |
+| `effects/scenery_more.py`, `scenery_land.py` | Harbour, River Bridge, Waterfront; Desert, Snowy Village, Castle, Countryside (`fw_scenery_more.js`, `fw_scenery_land.js`) | `WATER_SCENES`, `LAND_SCENES` |
+| `effects/fx_base.py` | Plug-in layers of the realistic renderer (`fw_fx.js`): registries, env, sky/over passes, gusty wind | `FxEnv`, `FxLayers`, `combine`, `WEATHER`, `SKY_FX`, `SCENE_FX`, `gusty_wind` |
+| `effects/fx_all.py` | Imports every plug-in module (registration) | — |
+| `effects/wx_util.py`, `wx_rain.py`, `wx_snow.py`, `wx_fog.py`, `wx_clouds.py`, `wx_lightning.py`, `wx_all.py` | Realistic weather plug-ins (`fw_wx_*.js`): Rain, Snow (accumulation), Fog, Mist, Clouds, Storm, Lightning; scene geometry/masks, periodic fbm textures | `make_rain`, `make_snow`, `make_fog`, `make_clouds`, `make_lightning`, `scene_geometry` |
+| `effects/fx_masks.py`, `sky_fx.py`, `sky_aurora.py` | Sky effects (`fw_sky_fx.js`, `fw_sky_aurora.js`, `fw_fx_masks.js`): moon, shooting stars, sky lanterns, aurora; sky/water masks | `masked`, `soft_sprite`, `Moon`, `Meteors`, `Lanterns`, `Aurora` |
+| `effects/scene_fx.py` | Scene animations (`fw_scene_fx.js`): boats, lighthouse, chimney smoke, beacons, searchlights, turbines | `SCENE_MAKERS` |
 | `effects/particle_effects.py` | Smoke particles (not used by the app) | `SmokeEffect` |
 | `gui/canvas.py` | Display widget: 60 fps timer, spawning, painting; `renderer` "Classic" (constructor default) or "Realistic" | `FireworksCanvas` |
 | `gui/canvas_real.py` | Realistic side of the canvas (mixin): settings → RealShow, click launch, finale, messages, scenery mode (Realistic: cached `build_scenery` per device size, rebuilt after resizing settles; Classic: `effects/backgrounds.py`), lift time, `paint_real` | `RealisticMixin`, `TYPE_OF_LABEL`, `SCENE_OF_CLASS` |
-| `gui/real_show.py` | Qt-free realistic state: `Sim` + `Director` + burst lights; maps the classic sliders like the web; lift time | `RealShow`, `Light`, `HORIZON`, `BEACH_HORIZON` |
-| `gui/real_painter.py` | QPainter renderer: scenery back (or classic background), burst light masked by the scenery's albedo, fading trail buffer with additive sprites (+ fireflies), bloom, reflection below the waterline, scenery front, weather, vignette | `RealPainter`, `beach_water_path()` |
+| `gui/canvas_fx.py` | Plug-in layers on the canvas (mixin): scene animations, sky effects, realistic weather with Realistic scenery; time of day; ground devices (Director.ground, niagara height from `scenery.bridge`, Fire) | `FxMixin` |
+| `gui/real_show.py` | Qt-free realistic state: `Sim` + `Director` + burst lights; maps the classic sliders like the web; lift time; gusty wind (seeded); ground devices | `RealShow`, `Light`, `HORIZON`, `BEACH_HORIZON`, `WIND_BASE` |
+| `gui/real_painter.py` | QPainter renderer: scenery back (or classic background), burst light masked by the scenery's albedo, fading trail buffer with additive sprites (+ fireflies), bloom, reflection below the waterline, plug-in sky pass, scenery front, plug-in over pass / classic weather, vignette | `RealPainter`, `beach_water_path()` |
 | `gui/real_sprites.py` | Soft radial-gradient star sprites cached per quantised colour/size | `SpriteCache` |
 | `gui/text_points.py` | Message text → star points (QPainterPath.addText, staggered grid, rainbow) for `Director.queue_messages` | `text_points()`, `message()`, `clean_text()` |
 | `gui/export.py` | File menu: frame as PNG, 5 s GIF at a fixed time step (optional Pillow) | `save_frame()`, `gif_frames()`, `export_gif()` |
 | `gui/controls.py` | Control panel (signals) built from `ui_specs`; Show group: renderer, scenery, lift time, shell type, finale, message | `ControlPanel` |
+| `gui/controls_scene.py` | Show group additions: time of day, sky effects, ground effects + device + Fire; Background/Weather lists (realistic-only scenes and weathers with Realistic renderer + scenery); their QSettings | `add_scene_controls`, `update_scene_lists`, `load_scene_settings` |
 | `gui/main_window.py` | Main window, detachable tabs, menus (incl. PNG/GIF export), QSettings, signal wiring | `FireworksApp`, `DetachableTabWidget` |
 | `utils/` | Colour (`ColorUtils.random_color`), math, physics, timing helpers | `ColorUtils`, `MathUtils`, `PhysicsUtils`, `TimeUtils` |
 | `standalone/fireworks_app.py` | Older single-file version | — |
@@ -80,6 +93,8 @@ Flat repo (modules import each other absolutely, e.g. `from models.particle impo
 | `tests/test_pyro.py` | Realistic engine physics and shell behaviour (Qt-free) |
 | `tests/test_real_canvas.py` | Desktop realistic mode, text sampler, PNG/GIF export (offscreen Qt) |
 | `tests/test_scenery.py` | Scenery noise vs JS reference values, every scene at two sizes, realistic painting with the scenery, Scenery/Lift time controls (offscreen Qt) |
+| `tests/test_desktop_scenes.py` | New scenes at two sizes + dusk, gusty wind, canvas plug-ins and ground devices, scene controls and their settings (offscreen Qt) |
+| `tests/test_realistic_weather.py`, `tests/test_sky_fx.py` | Weather / sky-effect / scene-animation plug-ins: update determinism and bounds, painting, paint time |
 | `tests/conftest.py` | Points the main window's QSettings at a temp INI file in every test |
 | `tests/test_web.py` | API, static build, fixture current (realistic runs skipped on CI), node tests (runs without Qt) |
 | `.github/workflows/pages.yml` | Test, build and publish the static site on push to `main` |

@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
 from config import FireworkConfig, DisplayConfig
 import ui_specs as U
+from gui import controls_scene as CS
 
 class ControlPanel(QWidget):
     # Signal definitions
@@ -28,6 +29,10 @@ class ControlPanel(QWidget):
     shell_type_changed = pyqtSignal(str)
     finale_requested = pyqtSignal()
     message_requested = pyqtSignal(str)
+    time_of_day_changed = pyqtSignal(str)       # ui_specs.TIMES_OF_DAY (gui/controls_scene.py)
+    sky_effects_changed = pyqtSignal(list)      # keys of ui_specs.SKY_EFFECTS that are on
+    ground_toggled = pyqtSignal(bool)
+    ground_fire_requested = pyqtSignal(str)     # models.ground_effects.DEVICES key
 
     # Pattern-specific signals
     pattern_option_signal = pyqtSignal(str, int)  # (option_name, value)
@@ -377,6 +382,8 @@ class ControlPanel(QWidget):
         layout.addWidget(self.opener_combo)
         layout.addWidget(self.message_finale)
         layout.addWidget(self.message_button)
+        CS.add_scene_controls(self, layout)
+        CS.update_scene_lists(self)
         group.setLayout(layout)
         return group
 
@@ -386,6 +393,12 @@ class ControlPanel(QWidget):
         for w in (self.scenery_combo, self.lift_slider, self.shell_combo, self.finale_button, self.message_input,
                   self.message_button, self.opener_combo, self.message_finale):
             w.setEnabled(real)
+
+    def sky_effects(self) -> list:
+        return CS.sky_effects(self)
+
+    def ground_device(self) -> str:
+        return CS.ground_device(self)
 
     def message_options(self) -> tuple:
         """(opener level, finale on) for the next message show"""
@@ -429,7 +442,8 @@ class ControlPanel(QWidget):
             'renderer': self.renderer_combo.currentText(),
             'scenery': self.scenery_combo.currentText(),
             'lift_time': self.lift_time(),
-            'shell_type': self.shell_combo.currentText()
+            'shell_type': self.shell_combo.currentText(),
+            **CS.scene_values(self)
         }
 
     def reset_to_defaults(self):
@@ -447,3 +461,4 @@ class ControlPanel(QWidget):
         self.scenery_combo.setCurrentText(U.SCENERIES[0])
         self.lift_slider.setValue(U.LIFT_TIME.default)
         self.shell_combo.setCurrentText(U.SHELL_TYPES[0])
+        CS.reset_scene_controls(self)

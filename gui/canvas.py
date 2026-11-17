@@ -7,6 +7,7 @@ from config import DEFAULT_LAUNCH_SPEED, FireworkConfig, DisplayConfig
 from models.firework import Firework
 
 from utils.color import ColorUtils
+from gui.canvas_fx import FxMixin
 from gui.canvas_real import RealisticMixin
 
 from models.patterns import (
@@ -32,7 +33,7 @@ from effects.backgrounds import (
     ForestBackground
 )
 
-class FireworksCanvas(RealisticMixin, QWidget):
+class FireworksCanvas(FxMixin, RealisticMixin, QWidget):
     """The display: classic particle fireworks (default) or the realistic renderer (`set_renderer`, gui/canvas_real.py)."""
 
     def __init__(self):
@@ -247,7 +248,9 @@ class FireworksCanvas(RealisticMixin, QWidget):
             self.pattern = RandomPattern()
 
     def set_background(self, background_name: str):
-        """Set the background effect based on the selected name"""
+        """Set the background effect based on the selected name (a realistic-only scene, e.g. "Harbour", has no
+        classic background object: see RealisticMixin.scene_name)"""
+        self.background_name = background_name
         if background_name == "Night Sky":
             self.background = NightSkyBackground(self.width(), self.height())
         elif background_name == "Cityscape":
@@ -262,7 +265,9 @@ class FireworksCanvas(RealisticMixin, QWidget):
             self.background = None  # Clear background if none selected
 
     def set_weather(self, weather_name: str):
-        """Set the weather effect based on the selected name"""
+        """Set the weather effect based on the selected name (realistic-only weathers such as "Storm" have no
+        classic effect object; the realistic renderer draws them as plug-ins: gui/canvas_fx.py)"""
+        self.weather_name = weather_name or "None"
         if weather_name == "Rain":
             self.weather_effect = RainEffect(self.width(), self.height())
         elif weather_name == "Snow":
@@ -271,8 +276,7 @@ class FireworksCanvas(RealisticMixin, QWidget):
             self.weather_effect = FogEffect(self.width(), self.height())
         elif weather_name == "Lightning":
             self.weather_effect = LightningEffect(self.width(), self.height())
-
-        elif weather_name == "None" or not weather_name:
+        else:               # "None", or a realistic-only weather
             self.weather_effect = None
 
         # Recreate the effect when window is resized
@@ -333,7 +337,9 @@ class FireworksCanvas(RealisticMixin, QWidget):
 
         # Reset effects
         self.background = None
+        self.background_name = None
         self.weather_effect = None
+        self.weather_name = "None"
 
         # Clear existing fireworks
         self.fireworks.clear()

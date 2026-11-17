@@ -4,13 +4,17 @@
 messages).  `sync()` maps the classic controls the way the web version does (web/static/real_view.js):
 star_scale = 0.5 + count/100, gravity_scale = gravity/0.1, height_scale = clamp((launch_speed/10)^2, 0.35, 1.3).
 `step()` advances one frame (1/60 s) and turns the sim's burst/launch events into decaying lights
-(the light model of web/static/fw_atmos.js).  The QPainter side lives in gui/real_painter.py.
+(the light model of web/static/fw_atmos.js) and sets the gusty wind (effects/fx_base.gusty_wind around WIND_BASE,
+seeded by `seed`, as web/static/real_view.js: one wind for shells, smoke and weather).  Ground devices
+(models/ground_effects.py): `set_ground` (Director.ground, niagara height from a bridge) and `fire_ground`.
+The QPainter side lives in gui/real_painter.py.
 """
 from __future__ import annotations
 
 import math
 import random
 
+from effects.fx_base import gusty_wind
 from models.director import Director
 from models.pyro import DT, FOCAL, Sim
 from models.shell_types import TYPES
@@ -20,6 +24,7 @@ HORIZON = 0.9          # classic scenery: fraction of the view height above the 
 BEACH_HORIZON = 0.7    # classic scenery: BeachBackground's waterline: shells rise from the water and are mirrored in it
 QUALITY = 0.5
 BUDGET = 4000
+WIND_BASE = 1.5        # m/s, +x (models.pyro.Sim.wind's default)
 
 
 class Light:
@@ -36,8 +41,9 @@ class Light:
 
 
 class RealShow:
-    def __init__(self, aspect: float = 16 / 9, horizon: float = HORIZON, rand=None):
+    def __init__(self, aspect: float = 16 / 9, horizon: float = HORIZON, rand=None, seed=None):
         self.rand = rand or random.Random()
+        self.seed = random.Random().getrandbits(32) if seed is None else int(seed)
         self.sim = Sim(self.rand, aspect=aspect, horizon=horizon, quality=QUALITY, budget=BUDGET)
         self.director = Director(self.rand)
         self.lights: list = []
@@ -63,6 +69,16 @@ class RealShow:
         """Sim.lift_time: seconds from launch to burst at most (None: real time, about 4.5 s for a high shell)."""
         self.sim.lift_time = None if seconds is None else float(seconds)
 
+    def set_ground(self, on: bool, niagara_height=None) -> None:
+        """Ground devices in auto launching and the finale; niagara_height: a bridge's deck height (m) or None."""
+        self.director.ground = bool(on)
+        self.director.niagara_height = niagara_height
+
+    def fire_ground(self, kind: str, niagara_height=None):
+        """Light one ground device now (as the web's Fire button: a niagara centred, at the bridge's height)."""
+        opts = {"height": float(niagara_height)} if kind == "niagara" and niagara_height else None
+        return self.sim.ground(kind, 0.0 if kind == "niagara" else None, None, opts)
+
     def set_view(self, aspect: float, horizon: float) -> None:
         self.sim.aspect = aspect
         self.sim.horizon = horizon
@@ -80,6 +96,7 @@ class RealShow:
 
     def clear(self) -> None:
         self.sim.stars.clear()
+        self.sim.emitters.clear()
         self.lights.clear()
         self.director.mode = "auto"
         self.director.cues = []
@@ -88,6 +105,7 @@ class RealShow:
     def step(self) -> None:
         self.director.step(self.sim)
         self.sim.step()
+        self.sim.wind = gusty_wind(WIND_BASE, self.sim.time, self.seed)
         for e in self.sim.events:
             if e[0] == "burst":
                 _, x, y, z, col, strength = e

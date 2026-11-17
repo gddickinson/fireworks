@@ -13,6 +13,9 @@ Layers, back to front, for one frame of a `gui.real_show.RealShow`:
   5. water (scenery.water, or the classic Beach): a dimmed, vertically squashed mirror image of the trails below the
      waterline;
   6. the scenery's `front` silhouettes, then weather (drawn normally on top) and a vignette.
+Plug-in layers (`fx`, an effects.fx_base.FxLayers with its FxEnv): their sky pass (moon, aurora, boats, clouds) is
+drawn after the burst light, behind the trails; their over pass (rain, snow, fog) after the front, before the
+vignette (the order of web/static/fw_render_2d.js).
 Projection as models/pyro.py: screen x = W/2 + FOCAL*H*x/z, y = horizon*H - FOCAL*H*y/z.
 """
 from __future__ import annotations
@@ -69,10 +72,11 @@ class RealPainter:
 
     # --- the frame ------------------------------------------------------------------------------------------
     def render(self, p: QPainter, W: int, H: int, show, background=None, weather=None, base_color=None,
-               water_y=None, scenery=None) -> None:
+               water_y=None, scenery=None, fx=None, fx_env=None) -> None:
         """Paint one frame of `show` (gui.real_show.RealShow) into p over the rect (0, 0, W, H).
 
-        scenery: an effects.scenery.Scenery (any size: drawn scaled to the rect) replacing background/water_y."""
+        scenery: an effects.scenery.Scenery (any size: drawn scaled to the rect) replacing background/water_y;
+        fx, fx_env: plug-in layers and their env (effects/fx_base.py) or None."""
         self.resize(W, H)
         W, H = self.W, self.H
         full = QRectF(0, 0, W, H)
@@ -89,6 +93,10 @@ class RealPainter:
                 background.draw(p)
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         self._lights(p, show, scenery is not None)
+        if fx is not None:
+            fx.draw_sky(p, fx_env)
+            p.setCompositionMode(OVER)
+            p.setOpacity(1.0)
         self._trails(show, scenery)
         small = self.trail.scaled(max(1, W // BLOOM_DIV), max(1, H // BLOOM_DIV),
                                   Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
@@ -113,6 +121,10 @@ class RealPainter:
         p.setCompositionMode(OVER)
         if scenery is not None:
             p.drawImage(full, scenery.front)
+        if fx is not None:
+            fx.draw_over(p, fx_env)
+            p.setCompositionMode(OVER)
+            p.setOpacity(1.0)
         if weather is not None:
             weather.draw(p)
         p.drawImage(0, 0, self.vignette)

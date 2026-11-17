@@ -6,6 +6,7 @@ version offers exactly the controls of the desktop app. A slider's real value is
 from dataclasses import asdict, dataclass
 
 from config import DEFAULT_LAUNCH_SPEED, FireworkConfig
+from models.ground_effects import DEVICES as GROUND_DEVICES, LABELS as GROUND_LABELS
 from models.shell_types import LABELS, TYPES
 
 PATTERNS = ["Random", "Circle", "Heart", "Star", "Spiral", "Double Ring", "Text"]
@@ -14,6 +15,13 @@ WEATHER = ["None", "Rain", "Snow", "Fog", "Lightning"]
 RENDERERS = ["Realistic", "Classic"]    # desktop: gui/real_painter.py (3-D shells) or the original particle model
 SCENERIES = ["Realistic", "Classic"]    # desktop realistic renderer: effects/scenery.py or effects/backgrounds.py
 SHELL_TYPES = ["Mixed"] + [LABELS[t] for t in TYPES]   # realistic mode; "Mixed" draws a type per shell
+# Desktop realistic renderer with realistic scenery only (effects/scenery_more.py, scenery_land.py, effects/fx_*.py):
+REAL_BACKGROUNDS = BACKGROUNDS + ["Harbour", "River Bridge", "Waterfront", "Desert", "Snowy Village", "Castle",
+                                  "Countryside"]
+TIMES_OF_DAY = ["Night", "Dusk"]
+REAL_WEATHER = ["None", "Rain", "Snow", "Fog", "Mist", "Clouds", "Storm", "Lightning"]
+SKY_EFFECTS = {"moon": "Moon", "aurora": "Aurora", "meteors": "Shooting stars", "lanterns": "Sky lanterns"}
+GROUND_DEVICE_LABELS = [GROUND_LABELS[k] for k in GROUND_DEVICES]
 OPENERS = {"Off": "off", "Short (~8 s)": "short", "Medium (~15 s)": "medium", "Long (~25 s)": "long"}  # message shows
 
 
